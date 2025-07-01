@@ -1,0 +1,17 @@
+# ninja log v6
+286	1483	7730735741716319	build.ninja	3a576b2a35969a27
+6	370	7730735730154769	E:/Projects/C++ Projects/Rrender/out/build/x64-debug/CMakeFiles/cmake.verify_globs	a545109839656010
+332	1682	7730681605979645	external/glad.lib	7a2e371817a253a2
+357	2028	7730731106051557	external/CMakeFiles/ImGui.dir/imgui/backends/imgui_impl_opengl3.cpp.obj	cfef00ce48933678
+262	1734	7730731647741954	src/Rrender.exe	183ba405d0f37107
+806	2016	7730731110553082	external/CMakeFiles/ImGui.dir/imgui/imgui_demo.cpp.obj	cef89e59dfa38cc8
+154	946	7730681355619024	external/CMakeFiles/glad.dir/GLAD/src/glad.c.obj	4ee3c15b8fa9c900
+2111	3098	7730730118301432	src/CMakeFiles/Rrender.dir/main.cpp.obj	9103aa0abdad606f
+1214	1973	7730731114636071	external/CMakeFiles/ImGui.dir/imgui/imgui_tables.cpp.obj	dde3dd8ba1a2daf2
+1047	2056	7730731112965833	external/CMakeFiles/ImGui.dir/imgui/imgui_draw.cpp.obj	b016870ecb066394
+1514	2102	7730731117631272	external/CMakeFiles/ImGui.dir/imgui/imgui_widgets.cpp.obj	39bdcdd607d01480
+553	2382	7730731108020399	external/CMakeFiles/ImGui.dir/imgui/imgui.cpp.obj	639aa6e1a2e99a1d
+416	2952	7730730101354945	external/CMakeFiles/ImGui.dir/imgui/backends/imgui_impl_glfw.cpp.obj	e9b471ee1fe32f6d
+2383	2962	7730731126319628	external/ImGui.lib	58c98882e3c2a9f3
+371	1452	7730735741716319	build.ninja	3a576b2a35969a27
+8	361	7730735744702711	E:/Projects/C++ Projects/Rrender/out/build/x64-debug/CMakeFiles/cmake.verify_globs	a545109839656010
