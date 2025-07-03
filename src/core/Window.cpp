@@ -22,7 +22,7 @@ namespace core {
 			throw std::runtime_error("Failed to create GLFW window");
 		}
 		glfwMakeContextCurrent(m_window);
-		glfwSwapInterval(1); // 启用垂直同步 V-sync
+		glfwSwapInterval(1); // 鍚敤鍨傜洿鍚屾 V-sync
 	}
 
 	Window::~Window() {

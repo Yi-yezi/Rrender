@@ -4,33 +4,37 @@
 #include<string>
 
 namespace core {
+    /**
+     * @brief 封装GLFW窗口的创建与管理
+     */
+    class Window {
+    public:
+        /**
+         * @brief 创建窗口
+         * @param height 高度
+         * @param width 宽度
+         * @param title 标题
+         */
+        Window(int height, int width, const std::string& title);
 
-	class Window {
-	public:
-		Window(int height, int width, const std::string& title);
-		~Window();
+        ~Window();
 
-		// ��ֹ�����븳ֵ
-		Window(const Window&) = delete;
-		Window& operator=(const Window&) = delete;
+        // 禁止拷贝与赋值
+        Window(const Window&) = delete;
+        Window& operator=(const Window&) = delete;
 
-		// �¼���ѯ + ˫����
-		void PollEvents();
-		void SwapBuffers();
+        void PollEvents();      ///< 事件轮询
+        void SwapBuffers();     ///< 交换缓冲区
+        bool ShouldClose() const; ///< 窗口是否应关闭
+        int GetWidth() const;     ///< 获取宽度
+        int GetHeight() const;    ///< 获取高度
+        GLFWwindow* GetNativeHandle() const; ///< 获取GLFW窗口指针
 
-		// ״̬��ѯ
-		bool ShouldClose() const;
-		int GetWidth() const;
-		int GetHeight() const;
-
-		// ��ȡԭʼ GLFWwindow*
-		GLFWwindow* GetNativeHandle() const;
-
-	private:
-		GLFWwindow* m_window = nullptr;
-		int m_width;
-		int m_height;
-		std::string m_title;
-	};
+    private:
+        GLFWwindow* m_window = nullptr; // GLFW窗口指针
+        int m_width;                    // 宽度
+        int m_height;                   // 高度
+        std::string m_title;            // 标题
+    };
 
 }
