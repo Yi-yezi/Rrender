@@ -2,14 +2,14 @@
 add_library(glad STATIC GLAD/src/glad.c)
 target_include_directories(glad PUBLIC GLAD/include)
 
-# GLFW£¨Ô¤±àÒë£©
+# GLFWï¼ˆé¢„ç¼–è¯‘ï¼‰
 add_library(glfw INTERFACE)
 target_include_directories(glfw INTERFACE ${PROJECT_SOURCE_DIR}/external/GLFW)
 add_library(glfw_link STATIC IMPORTED GLOBAL)
 set_target_properties(glfw_link PROPERTIES
     IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/libs/glfw3.lib)
 
-# GLM£¨Í·ÎÄ¼þ-only£©
+# GLMï¼ˆå¤´æ–‡ä»¶-onlyï¼‰
 add_library(glm INTERFACE)
 target_include_directories(glm INTERFACE ${PROJECT_SOURCE_DIR}/external/glm)
 

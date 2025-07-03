@@ -1,23 +1,39 @@
-#include "core/InputManager.h"
+﻿#include "core/InputManager.h"
 
 namespace core{
     
-    void InputManager::Init(GLFWwindow* window) {
+    InputManager::InputManager(std::shared_ptr<Window> window) {
         s_Window = window;
-        // 注册GLFW回调函数
-        glfwSetKeyCallback(s_Window, KeyCallback);
-        glfwSetMouseButtonCallback(s_Window, MouseButtonCallback);
-        glfwSetCursorPosCallback(s_Window, CursorPosCallback);
+        GLFWwindow* glfwWindow = window->GetNativeHandle();
 
-        // 初始化鼠标位置
-        glfwGetCursorPos(window, &s_LastX, &s_LastY);
-        s_MouseX = s_LastX;
-        s_MouseY = s_LastY;
+        // 设置GLFW回调
+        glfwSetKeyCallback(glfwWindow, KeyCallback);
+        glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
+        glfwSetCursorPosCallback(glfwWindow, CursorPosCallback);
+        glfwSetScrollCallback(glfwWindow, ScrollCallback);
+        glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
-    // TODO: 实现Update函数
     void InputManager::Update() {
-        //
+        // 通知监听者
+        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
+            if (auto listener = it->lock()) {
+                listener->OnInput();
+                ++it;
+            } else {
+                it = s_Listeners.erase(it);  // 移除失效的 weak_ptr
+            }
+        }
+
+        // 更新键盘状态
+        s_KeyStateLast = s_KeyState;
+        s_MouseButtonStateLast = s_MouseButtonState;
+
+        // 清空鼠标增量和滚轮
+        s_DeltaX = 0.0;
+        s_DeltaY = 0.0;
+        s_ScrollX = 0.0;
+        s_ScrollY = 0.0;
     }
 
     bool InputManager::IsKeyDown(int key) {
@@ -57,68 +73,36 @@ namespace core{
     }
 
     void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-        if (action == GLFW_PRESS) {
-            s_KeyState[key] = true;
-        } 
-        else if (action == GLFW_RELEASE) {
-            s_KeyState[key] = false;
+        if(action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            // 如果按下ESC键，设置窗口应关闭状态
+            s_Window->SetShouldClose(true);
         }
 
-        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
-            if (auto listener = it->lock()) {
-                listener->OnKey(key, scancode, action, mods);
-                ++it;
-            } 
-            else {
-                it = s_Listeners.erase(it);
-            }
-        }
+        s_KeyState[key] = (action != GLFW_RELEASE);
     }
 
     void InputManager::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-        if (action == GLFW_PRESS) {
-            s_MouseButtonState[button] = true;
-        } else if (action == GLFW_RELEASE) {
-            s_MouseButtonState[button] = false;
-        }
-
-        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
-            if (auto listener = it->lock()) {
-                listener->OnMouseButton(button, action, mods);
-                ++it;
-            } 
-            else {
-                it = s_Listeners.erase(it);
-            }
-        }
+        s_MouseButtonState[button] = (action != GLFW_RELEASE);
     }
 
     void InputManager::CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-        s_LastX = s_MouseX;
-        s_LastY = s_MouseY;
+        if (firstMouseMove) {
+			// 如果是第一次鼠标移动，记录初始位置
+			s_LastX = xpos;
+			s_LastY = ypos;
+			firstMouseMove = false; // 之后不再是第一次
+        }
         s_MouseX = xpos;
         s_MouseY = ypos;
-        s_DeltaX = s_MouseX - s_LastX;
-        s_DeltaY = s_MouseY - s_LastY;
-        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
-            if (auto listener = it->lock()) {
-                listener->OnMouseMove(xpos, ypos, s_DeltaX, s_DeltaY);
-                ++it;
-            } else {
-                it = s_Listeners.erase(it);
-            }
-        }
+        s_DeltaX += s_MouseX - s_LastX;
+        s_DeltaY -= s_MouseY - s_LastY;
+        s_LastX = s_MouseX;
+        s_LastY = s_MouseY;
     }
 
     void InputManager::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
-            if (auto listener = it->lock()) {
-                listener->OnScroll(xoffset, yoffset);
-                ++it;
-            } else {
-                it = s_Listeners.erase(it);
-            }
-        }
+        s_ScrollX = xoffset;
+        s_ScrollY = yoffset;
     }
 
 }

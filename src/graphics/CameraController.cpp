@@ -1,37 +1,64 @@
 #include "graphics/CameraController.h"
+#include "core/InputManager.h"
+#include "utils/Time.h"
 
-namespace graphics{
-    CameraController::CameraController()
-        : m_Mode(CameraMode::Arcball), m_Position(0.0f, 0.0f, 3.0f), m_Front(0.0f, 0.0f, -1.0f),
-          m_Up(0.0f, 1.0f, 0.0f), m_WorldUp(0.0f, 1.0f, 0.0f), m_Yaw(-90.0f), m_Pitch(0.0f),
-          m_MoveSpeed(2.5f), m_MouseSensitivity(0.1f), m_Target(0.0f, 0.0f, 0.0f),
-          m_DistanceToTarget(5.0f), m_ArcballYaw(90.0f), m_ArcballPitch(45.0f) {
-        // 初始化相机向量
-        m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+
+namespace graphics {
+
+    CameraController::CameraController(std::shared_ptr<Camera> camera)
+        : m_Camera(camera),
+          m_MoveSpeed(3.0f),
+          m_MouseSensitivity(0.1f),
+          m_ConstrainPitch(true) {}
+
+    void CameraController::SetCamera(std::shared_ptr<Camera>& camera) {
+        m_Camera = camera;
     }
 
-    void CameraController::SetMode(CameraMode mode) {
-        m_Mode = mode;
+    void CameraController::SetMoveSpeed(float speed) {
+        m_MoveSpeed = speed;
     }
 
-    CameraController::CameraMode CameraController::GetMode() const {
-        return m_Mode;
+    void CameraController::SetMouseSensitivity(float sensitivity) {
+        m_MouseSensitivity = sensitivity;
     }
 
-    glm::mat4 CameraController::GetViewMatrix() const {
-        if (m_Mode == CameraMode::FirstPerson) {
-            return glm::lookAt(m_Position, m_Position + m_Front, m_Up);
-        } else { // Arcball mode
-            glm::vec3 position = m_Target + glm::vec3(
-                m_DistanceToTarget * cos(glm::radians(m_ArcballYaw)) * cos(glm::radians(m_ArcballPitch)),
-                m_DistanceToTarget * sin(glm::radians(m_ArcballPitch)),
-                -m_DistanceToTarget * sin(glm::radians(m_ArcballYaw)) * cos(glm::radians(m_ArcballPitch))
-            );
-            return glm::lookAt(position, m_Target, m_Up);
+    void CameraController::SetPitchConstraint(bool enabled) {
+        m_ConstrainPitch = enabled;
+    }
+
+    void CameraController::OnInput() {
+        if (!m_Camera) return;
+
+        float deltaTime = utils::Time::GetDeltaTime();
+        std::tuple<glm::vec3, glm::vec3, glm::vec3> directions = m_Camera->GetDirectionVectors(); // 获取前、上、右向量
+
+        // 键盘移动
+        
+        if (core::InputManager::IsKeyDown(GLFW_KEY_W)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() + std::get<0>(directions) * m_MoveSpeed * deltaTime);
         }
+        if (core::InputManager::IsKeyDown(GLFW_KEY_S)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() - std::get<0>(directions) * m_MoveSpeed * deltaTime);
+        }
+        if (core::InputManager::IsKeyDown(GLFW_KEY_A)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() - std::get<2>(directions) * m_MoveSpeed * deltaTime);
+        }
+        if (core::InputManager::IsKeyDown(GLFW_KEY_D)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() + std::get<2>(directions) * m_MoveSpeed * deltaTime);
+        }
+        if (core::InputManager::IsKeyDown(GLFW_KEY_SPACE)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() + std::get<1>(directions) * m_MoveSpeed * deltaTime);
+        }
+        if (core::InputManager::IsKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+            m_Camera->SetPosition(m_Camera->GetPosition() - std::get<1>(directions) * m_MoveSpeed * deltaTime);
+        }
+
+        // 鼠标控制旋转
+        auto [mouseDeltaX, mouseDeltaY] = core::InputManager::GetMouseDelta();
+        m_Camera->AddRotation(static_cast<float>(mouseDeltaX) * m_MouseSensitivity,
+                            static_cast<float>(mouseDeltaY)* m_MouseSensitivity,
+                              m_ConstrainPitch);
     }
 
-    glm::vec3 CameraController::GetPosition() const {
-        return (m_Mode == CameraMode::FirstPerson) ? m_Position : (m_Target + glm::vec3(
-            m_DistanceToTarget * cos(glm::radians(m_ArcballYaw)) * cos(glm::radians(m_Arc
 }

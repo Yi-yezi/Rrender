@@ -1,9 +1,10 @@
-#pragma once
+﻿#pragma once
 #include<GLFW/glfw3.h>
 #include<memory>
 #include<unordered_map>
 #include<vector>
 #include "InputListener.h"
+#include "Window.h"
 
 namespace core {
     /**
@@ -12,10 +13,10 @@ namespace core {
     class InputManager {
         public:
             /**
-             * @brief 初始化输入管理器，设置GLFW回调
-             * @param window GLFW窗口指针
+             * @brief 初始化输入管理器
+             * @param window 窗口智能指针
              */
-            static void Init(GLFWwindow* window);
+            explicit InputManager(std::shared_ptr<Window> window);
 
             /**
              * @brief 更新输入状态，通常在每帧调用
@@ -105,7 +106,7 @@ namespace core {
             static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 
-            inline static GLFWwindow* s_Window = nullptr;
+            inline static std::shared_ptr<Window> s_Window; // 窗口指针
 
             inline static std::unordered_map<int, bool> s_KeyState;         // 当前帧键盘状态
             inline static std::unordered_map<int, bool> s_KeyStateLast;     // 上一帧键盘状态
@@ -116,6 +117,8 @@ namespace core {
             inline static double s_MouseX = 0.0, s_MouseY = 0.0;     // 当前鼠标坐标
             inline static double s_LastX = 0.0, s_LastY = 0.0;       // 上一帧鼠标坐标
             inline static double s_DeltaX = 0.0, s_DeltaY = 0.0;     // 鼠标本帧移动距离
+            inline static double s_ScrollX = 0.0, s_ScrollY = 0.0;   // 鼠标滚轮偏移
+			inline static bool firstMouseMove = true; // 是否第一次鼠标移动
 
             inline static std::vector<std::weak_ptr<InputListener>> s_Listeners; // 输入监听器
 
