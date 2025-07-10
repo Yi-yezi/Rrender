@@ -48,6 +48,18 @@ namespace graphics {
     const glm::vec3& Camera::GetPosition() const {
         return m_Position;
     }
+
+    const glm::vec3& Camera::GetFront() const {
+        return m_Front;
+    }
+
+    const glm::vec3& Camera::GetUp() const {
+        return m_Up;
+    }
+
+    const glm::vec3& Camera::GetRight() const {
+        return m_Right;
+    }
     
     const std::tuple<glm::vec3, glm::vec3, glm::vec3> Camera::GetDirectionVectors() const {
         return std::make_tuple(m_Front, m_Up, m_Right);

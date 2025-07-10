@@ -71,6 +71,21 @@ public:
     const glm::vec3& GetPosition() const;
 
     /**
+     * @brief 获取相机前向量
+     */
+    const glm::vec3& GetFront() const;
+
+    /**
+     * @brief 获取相机上向量
+     */
+    const glm::vec3& GetUp() const;
+
+    /**
+     * @brief 获取相机右向量
+     */
+    const glm::vec3& GetRight() const;
+
+    /**
      * @brief 获取相机方向向量（前、上、右）
      * @return std::tuple 包含前向量、上向量和右向量
      */

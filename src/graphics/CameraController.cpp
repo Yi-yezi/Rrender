@@ -12,7 +12,7 @@ namespace graphics {
           m_ConstrainPitch(true) {}
 
     void CameraController::SetCamera(std::shared_ptr<Camera>& camera) {
-        m_Camera = camera;
+        m_Camera = std::move(camera);
     }
 
     void CameraController::SetMoveSpeed(float speed) {

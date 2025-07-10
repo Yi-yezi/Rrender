@@ -2,6 +2,14 @@
 add_library(glad STATIC GLAD/src/glad.c)
 target_include_directories(glad PUBLIC GLAD/include)
 
+# stb_image
+add_library(stbimage STATIC STBImage/src/stb_image.cpp)
+target_include_directories(stbimage PUBLIC STBImage/include)
+
+# tinyobjloader
+add_library(tinyobjloader INTERFACE)
+target_include_directories(tinyobjloader INTERFACE ${PROJECT_SOURCE_DIR}/external/TinyObjLoader)
+
 # GLFW（预编译）
 add_library(glfw INTERFACE)
 target_include_directories(glfw INTERFACE ${PROJECT_SOURCE_DIR}/external/GLFW)

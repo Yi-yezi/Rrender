@@ -10,6 +10,8 @@ target_link_libraries(Rrender
         glfw
         glfw_link
         ImGui 
+        stbimage
+        tinyobjloader
         glm
         opengl32
 )
