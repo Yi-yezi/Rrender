@@ -5,25 +5,30 @@ namespace core {
 void InputManager::Init(std::shared_ptr<Window> window) {
     s_Window = window;
     if (auto windowPtr = s_Window.lock()) {
-        GLFWwindow* glfwWindow = windowPtr->GetNativeHandle();
+        s_GLFWWindow = windowPtr->GetNativeHandle();
 
-        glfwSetKeyCallback(glfwWindow, KeyCallback);
-        glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
-        glfwSetCursorPosCallback(glfwWindow, CursorPosCallback);
-        glfwSetScrollCallback(glfwWindow, ScrollCallback);
-        glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetKeyCallback(s_GLFWWindow, KeyCallback);
+        glfwSetMouseButtonCallback(s_GLFWWindow, MouseButtonCallback);
+        glfwSetCursorPosCallback(s_GLFWWindow, CursorPosCallback);
+        glfwSetScrollCallback(s_GLFWWindow, ScrollCallback);
+        glfwSetInputMode(s_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        //glfwSetFramebufferSizeCallback(s_GLFWWindow, viewportSizeCallback);
     }
 }
 
 void InputManager::Update() {
-    for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
-        if (auto listener = it->lock()) {
-            listener->OnInput();
-            ++it;
-        } else {
-            it = s_Listeners.erase(it);
+    int mode = glfwGetInputMode(s_GLFWWindow, GLFW_CURSOR);
+    if (mode == GLFW_CURSOR_DISABLED) {
+        for (auto it = s_Listeners.begin(); it != s_Listeners.end();) {
+            if (auto listener = it->lock()) {
+                listener->OnInput();
+                ++it;
+            } else {
+                it = s_Listeners.erase(it);
+            }
         }
     }
+    
 
     s_KeyStateLast = s_KeyState;
     s_MouseButtonStateLast = s_MouseButtonState;
@@ -70,12 +75,36 @@ void InputManager::RegisterListener(const std::shared_ptr<InputListener>& listen
     s_Listeners.push_back(listener);
 }
 
+void InputManager::viewportSizeCallback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+    aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+}
+
+float InputManager::GetAspectRatio() {
+    if (auto windowPtr = s_Window.lock()) {
+        int width, height;
+        windowPtr->GetFrameBufferSize(width, height);
+        if (height == 0) return 1.0f; // 防止除以零
+        return static_cast<float>(width) / static_cast<float>(height);
+    }
+    return aspectRatio; // 如果窗口不可用，返回默认值
+}
+
 void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     auto windowPtr = s_Window.lock();
     if (!windowPtr) return;
 
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
         windowPtr->SetShouldClose(true);
+    }
+
+    if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
+        int mode = glfwGetInputMode(window, GLFW_CURSOR);
+        if (mode == GLFW_CURSOR_DISABLED) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
 
     s_KeyState[key] = (action != GLFW_RELEASE);

@@ -33,8 +33,9 @@ namespace graphics {
 
         // 获取模型文件所在目录
         std::string baseDir = std::filesystem::path(path).parent_path().string();
-        if (!baseDir.empty() && baseDir.back() != '/' && baseDir.back() != '\\')
-            baseDir += '/';
+        if (!baseDir.empty())
+            baseDir += std::filesystem::path::preferred_separator;
+
 
         // 加载OBJ文件
         bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,

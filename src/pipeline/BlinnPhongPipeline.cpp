@@ -15,6 +15,10 @@ void BlinnPhongPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
                                 const std::shared_ptr<graphics::Camera>& camera) {
     if (!m_Shader || !scene || !camera) return;
 
+    glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glEnable(GL_DEPTH_TEST);                                 
     m_Shader->Bind();
     m_Shader->SetUniform("u_View", camera->GetViewMatrix());
     m_Shader->SetUniform("u_Projection", camera->GetProjectionMatrix());

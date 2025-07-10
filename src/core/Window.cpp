@@ -12,12 +12,11 @@ namespace core {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+        
         m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
         if (!m_window) {
             throw std::runtime_error("Failed to create GLFW window");
         }
-
         glfwMakeContextCurrent(m_window);
         glfwSwapInterval(1); // Enable V-Sync
     }
@@ -33,6 +32,7 @@ namespace core {
             m_glfwInitialized = false;
         }
     }
+
 
     void Window::InitGLFW() {
         if (!glfwInit()) {
@@ -60,16 +60,12 @@ namespace core {
         glfwSetWindowShouldClose(m_window, flag);
     }
 
-    int Window::GetWidth() const {
-        int width, height;
+    void Window::GetSize(int& width, int& height) const {
         glfwGetWindowSize(m_window, &width, &height);
-        return width;
     }
 
-    int Window::GetHeight() const {
-        int width, height;
-        glfwGetWindowSize(m_window, &width, &height);
-        return height;
+    void Window::GetFrameBufferSize(int& width, int& height) const {
+        glfwGetFramebufferSize(m_window, &width, &height);
     }
 
     GLFWwindow* Window::GetNativeHandle() const {

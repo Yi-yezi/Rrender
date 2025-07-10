@@ -21,6 +21,11 @@ namespace graphics {
 			return glm::ortho(m_Left, m_RightBound, m_Bottom, m_Top, m_Near, m_Far);
 		}
     }
+
+    void Camera::SetAspectRatio(float aspect) {
+        m_Aspect = aspect;
+        UpdateDirection(); // 更新投影矩阵
+    }
     
     void Camera::SetPosition(const glm::vec3& pos) {
         m_Position = pos;

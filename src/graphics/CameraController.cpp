@@ -59,6 +59,8 @@ namespace graphics {
         m_Camera->AddRotation(static_cast<float>(mouseDeltaX) * m_MouseSensitivity,
                             static_cast<float>(mouseDeltaY)* m_MouseSensitivity,
                               m_ConstrainPitch);
+
+        m_Camera->SetAspectRatio(core::InputManager::GetAspectRatio());
     }
 
 }

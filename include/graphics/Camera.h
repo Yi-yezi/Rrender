@@ -66,6 +66,12 @@ public:
     void AddRotation(float yawDegrees, float pitchDegrees, bool constrainPitch);
 
     /**
+     * @brief 设置透视投影参数
+     * @param aspect 宽高比
+     */
+    void SetAspectRatio(float aspect);
+
+    /**
      * @brief 获取相机位置
      */
     const glm::vec3& GetPosition() const;
@@ -116,10 +122,10 @@ private:
     float m_Far = 100.f;   ///< 远平面
 
     // 正交投影参数
-    float m_Left = -1.f;       ///< 左边界
-    float m_RightBound = 1.f;  ///< 右边界
-    float m_Bottom = -1.f;     ///< 下边界
-    float m_Top = 1.f;         ///< 上边界
+    float m_Left = -3.f;       ///< 左边界
+    float m_RightBound = 3.f;  ///< 右边界
+    float m_Bottom = -3.f;     ///< 下边界
+    float m_Top = 3.f;         ///< 上边界
 
     mutable glm::mat4 m_ProjectionMatrix = glm::mat4(1.f); ///< 投影矩阵缓存，允许在const函数中更新
 };

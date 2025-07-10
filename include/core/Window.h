@@ -16,8 +16,9 @@ namespace core {
         bool ShouldClose() const;
         void SetShouldClose(bool flag);
 
-        int GetWidth() const;
-        int GetHeight() const;
+
+        void GetSize(int& width, int& height) const;
+        void GetFrameBufferSize(int& width, int& height) const;
 
         GLFWwindow* GetNativeHandle() const;
 
