@@ -1,4 +1,5 @@
 #include "graphics/Mesh.h"
+#include <iostream>
 
 namespace graphics {
 
@@ -6,32 +7,85 @@ namespace graphics {
         SetupMesh(vertices, indices);
     }
 
+    Mesh::Mesh(const std::vector<Vertex>& vertices) {
+        SetupMesh(vertices);
+    }
+
+
     Mesh::~Mesh() {
         glDeleteVertexArrays(1, &m_VAO);
         glDeleteBuffers(1, &m_VBO);
         glDeleteBuffers(1, &m_EBO);
     }
 
-    Mesh::Mesh(Mesh&& other) noexcept {
-        m_VAO = other.m_VAO;
-        m_VBO = other.m_VBO;
-        m_EBO = other.m_EBO;
-        m_IndexCount = other.m_IndexCount;
-        other.m_VAO = other.m_VBO = other.m_EBO = 0;
+    // 修改后的移动构造函数
+    Mesh::Mesh(Mesh&& other) noexcept 
+        : m_VAO(other.m_VAO),
+          m_VBO(other.m_VBO),
+          m_EBO(other.m_EBO),
+          m_IndexCount(other.m_IndexCount),
+          m_VertexCount(other.m_VertexCount),    // 新增
+          m_UseEBO(other.m_UseEBO)               // 新增
+    {
+        // 置空源对象
+        other.m_VAO = 0;
+        other.m_VBO = 0;
+        other.m_EBO = 0;
+        other.m_IndexCount = 0;
+        other.m_VertexCount = 0;                 // 新增
+        other.m_UseEBO = false;                  // 新增
     }
 
+    // 修改后的移动赋值运算符
     Mesh& Mesh::operator=(Mesh&& other) noexcept {
         if (this != &other) {
+            // 释放当前对象资源
+            glDeleteVertexArrays(1, &m_VAO);
+            glDeleteBuffers(1, &m_VBO);
+            glDeleteBuffers(1, &m_EBO);
+
+            // 转移资源
             m_VAO = other.m_VAO;
             m_VBO = other.m_VBO;
             m_EBO = other.m_EBO;
             m_IndexCount = other.m_IndexCount;
-            other.m_VAO = other.m_VBO = other.m_EBO = 0;
+            m_VertexCount = other.m_VertexCount;  // 新增
+            m_UseEBO = other.m_UseEBO;            // 新增
+
+            // 置空源对象
+            other.m_VAO = 0;
+            other.m_VBO = 0;
+            other.m_EBO = 0;
+            other.m_IndexCount = 0;
+            other.m_VertexCount = 0;              // 新增
+            other.m_UseEBO = false;               // 新增
         }
         return *this;
     }
 
+    void Mesh::SetupMesh(const std::vector<Vertex>& vertices) {
+        m_UseEBO = false;
+        m_VertexCount = static_cast<GLsizei>(vertices.size());
+        
+        glGenVertexArrays(1, &m_VAO);
+        glGenBuffers(1, &m_VBO);
+        
+        glBindVertexArray(m_VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+        
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+        
+        glBindVertexArray(0);
+    }
+
     void Mesh::SetupMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
+        m_UseEBO = true;
         m_IndexCount = indices.size();
 
         glGenVertexArrays(1, &m_VAO);
@@ -63,7 +117,10 @@ namespace graphics {
 
     void Mesh::Draw() const {
         glBindVertexArray(m_VAO);
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_IndexCount), GL_UNSIGNED_INT, 0);
+        if (m_UseEBO)
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_IndexCount), GL_UNSIGNED_INT, 0);
+        else
+            glDrawArrays(GL_TRIANGLES, 0, m_VertexCount);
         glBindVertexArray(0);
     }
 

@@ -15,6 +15,7 @@ namespace graphics {
     class Mesh {
     public:
         explicit Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
+        explicit Mesh(const std::vector<Vertex>& vertices);
         ~Mesh();
 
         void Draw() const;
@@ -28,8 +29,11 @@ namespace graphics {
     private:
         unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
         size_t m_IndexCount = 0;
+        bool m_UseEBO = true; // 默认为 true，用于判断是否使用 glDrawElements
+        GLsizei m_VertexCount = 0;
 
         void SetupMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
+        void SetupMesh(const std::vector<Vertex>& vertices);
     };
 
 }

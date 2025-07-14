@@ -12,11 +12,15 @@
 
     #include "pipeline/BlinnPhongPipeline.h"
     #include "pipeline/OutlinePipeline.h"
+    #include "pipeline/ShadowMappingPipeline.h"
+    #include "pipeline/PointShadowMappingPipeline.h"
     #include "scene/Scene.h"
     #include "scene/Entity.h"
     #include "graphics/Light.h"
     #include "utils/PathResolver.h"
     #include "ui/UIManager.h"
+    #include "assets/VerticesData.h"
+    #include "utils/utils.h"
 
     using namespace core;
     using namespace graphics;
@@ -34,7 +38,6 @@
                 throw std::runtime_error("Failed to initialize GLAD");
             }
             
-
             // 初始化输入和相机控制器
             InputManager::Init(windowPtr);
             auto cameraPtr = std::make_shared<Camera>(Camera::ProjectionType::Perspective);
@@ -47,37 +50,104 @@
             InputManager::RegisterListener(controllerPtr);
 
             // 载入着色器和模型资源
-            auto shader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/blinn_phong/blinnphong.vert"),
-                PathResolver::Resolve("shaders/blinn_phong/blinnphong.frag"));
-            auto model = ResourceManager::LoadModel(
+            //auto shader = ResourceManager::LoadShader(
+            //    PathResolver::Resolve("shaders/blinn_phong/blinnphong.vert"),
+            //    PathResolver::Resolve("shaders/blinn_phong/blinnphong.frag"));
+            //auto model = ResourceManager::LoadModel(
+            //    PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
+
+            auto mainShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows.vert"),
+                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows.frag"));
+
+            auto depthShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.vert"),
+                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.frag"),
+                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.geom"));
+
+            auto debugShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/shadow_mapping/debug.vert"),
+                PathResolver::Resolve("shaders/shadow_mapping/debug.frag"));
+
+            
+
+
+
+
+
+            // 使用自定义顶点数据创建模型
+            auto cubeModel = ResourceManager::LoadModel(
+                "cube",
+                ParseVertexData(cubeVertices,36), // 使用自定义立方体顶点数据
+                PathResolver::Resolve("assets/textures/wood.png"),
+                false);
+
+            auto planeModel = ResourceManager::LoadModel(
+                "plane",
+                ParseVertexData(planeVertices, 6), // 使用自定义平面顶点数据
+                PathResolver::Resolve("assets/textures/wood.png"),
+                false);
+
+            auto backpackModel = ResourceManager::LoadModel(
                 PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
+
 
             // 创建渲染管线
             //BlinnPhongPipeline pipeline(shader);
-            OutlinePipeline pipeline(
-                shader,
-                ResourceManager::LoadShader(
-                    PathResolver::Resolve("shaders/outline/outline.vert"),
-                    PathResolver::Resolve("shaders/outline/outline.frag")));
+            //OutlinePipeline pipeline(
+            //    shader,
+            //    ResourceManager::LoadShader(
+            //        PathResolver::Resolve("shaders/outline/outline.vert"),
+            //        PathResolver::Resolve("shaders/outline/outline.frag")));
+            //ShadowMappingPipeline pipeline(depthShader, mainShader);
+            PointShadowMappingPipeline pipeline(depthShader, mainShader);
+
 
             // 创建场景和实体
             auto scenePtr = std::make_shared<Scene>();
-            auto entityPtr = std::make_shared<Entity>(model);
-            entityPtr->SetPosition(glm::vec3(0.0f));
-            entityPtr->SetScale(glm::vec3(1.0f));
+            auto entityPtr = std::make_shared<Entity>(backpackModel);
+            entityPtr->SetPosition(glm::vec3(-1.0f,1.0f,0.2f));
+            entityPtr->SetScale(glm::vec3(0.2f));
             scenePtr->AddEntity(entityPtr);
+
+            //auto entity = std::make_shared<Entity>(cubeModel);
+            //entity->SetPosition(glm::vec3(0.0f));
+            //entity->SetScale(glm::vec3(1.0f));
+            //scenePtr->AddEntity(entity);
+            //添加多个实体
+
+            auto entity = std::make_shared<Entity>(cubeModel);
+            entity->SetPosition(glm::vec3(0.0f, 1.5f, 0.0));
+            entity->SetScale(glm::vec3(0.5f));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(cubeModel);
+            entity->SetPosition(glm::vec3(2.0f, 0.0f, 1.0));
+            entity->SetScale(glm::vec3(0.5f));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(cubeModel);
+            entity->SetPosition(glm::vec3(-1.0f, 0.0f, 2.0));
+            entity->SetRotation(glm::vec3(0.0f, 60.0f, 0.0f));
+            entity->SetScale(glm::vec3(0.25f));
+            scenePtr->AddEntity(entity);
+
+
+            //添加平面实体
+            auto planeEntity = std::make_shared<Entity>(planeModel);
+            planeEntity->SetPosition(glm::vec3(0.0f));
+            scenePtr->AddEntity(planeEntity);
+
+            
 
             // 添加方向光
             auto dirLight = std::make_shared<DirectionalLight>();
-            dirLight->SetDirection(glm::vec3(-0.2f, -1.0f, -0.3f));
+            dirLight->SetDirection(glm::vec3(2.0f, -4.0f, 1.0f));
             dirLight->SetColor(glm::vec3(1.0f));
             dirLight->SetIntensity(0.8f);
-            scenePtr->AddLight(dirLight);
+            //scenePtr->AddLight(dirLight);
 
             // 添加点光源
             auto pointLight = std::make_shared<PointLight>();
-            pointLight->SetPosition(glm::vec3(2.0f, 2.0f, 2.0f));
+            pointLight->SetPosition(glm::vec3(2.0f, 4.0f, 1.0f));
             pointLight->SetColor(glm::vec3(1.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
@@ -91,7 +161,7 @@
             spotLight->SetIntensity(1.5f);
             spotLight->SetCutOff(glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(17.5f)));
             spotLight->SetAttenuation(1.0f, 0.09f, 0.032f);
-            scenePtr->AddLight(spotLight);
+            //scenePtr->AddLight(spotLight);
 
             // 初始化ImGui
             UIManager::Init(windowPtr, "#version 330 core");

@@ -16,7 +16,8 @@ namespace graphics {
          * @param vertexPath 顶点着色器路径
          * @param fragmentPath 片段着色器路径
          */
-        Shader(const std::string& vertexPath, const std::string& fragmentPath);
+        Shader(const std::string& vertexPath, const std::string& fragmentPath,
+               const std::string& geometryPath = "");
 
         /**
          * @brief 禁止拷贝构造和赋值

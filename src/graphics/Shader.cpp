@@ -7,9 +7,16 @@
 namespace graphics {
 
     // 构造函数：加载并编译着色器
-    Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
+    Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath,
+                   const std::string& geometryPath) {
         std::string vertexCode = ReadFile(vertexPath);
         std::string fragmentCode = ReadFile(fragmentPath);
+        std::string geometryCode;
+        unsigned int geometry = 0;
+        if(geometryPath != "") {
+            geometryCode = ReadFile(geometryPath);
+            geometry = CompileShader(GL_GEOMETRY_SHADER, geometryCode);
+        } 
 
         unsigned int vertex = CompileShader(GL_VERTEX_SHADER, vertexCode);
         unsigned int fragment = CompileShader(GL_FRAGMENT_SHADER, fragmentCode);
@@ -18,6 +25,9 @@ namespace graphics {
         m_ID = glCreateProgram();
         glAttachShader(m_ID, vertex);
         glAttachShader(m_ID, fragment);
+        if(geometryPath != "") {
+            glAttachShader(m_ID, geometry);
+        }
         glLinkProgram(m_ID);
         CheckCompileErrors(m_ID, "PROGRAM");
 

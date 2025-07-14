@@ -122,10 +122,10 @@ private:
     float m_Far = 100.f;   ///< 远平面
 
     // 正交投影参数
-    float m_Left = -3.f;       ///< 左边界
-    float m_RightBound = 3.f;  ///< 右边界
-    float m_Bottom = -3.f;     ///< 下边界
-    float m_Top = 3.f;         ///< 上边界
+    float m_Left = -10.f;       ///< 左边界
+    float m_RightBound = 10.f;  ///< 右边界
+    float m_Bottom = -10.f;     ///< 下边界
+    float m_Top = 10.f;         ///< 上边界
 
     mutable glm::mat4 m_ProjectionMatrix = glm::mat4(1.f); ///< 投影矩阵缓存，允许在const函数中更新
 };

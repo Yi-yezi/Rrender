@@ -16,14 +16,15 @@ std::string ResourceManager::ExtractName(const std::string& path) {
     return p.stem().string();
 }
 
-std::shared_ptr<graphics::Shader> ResourceManager::LoadShader(const std::string& vertexPath, const std::string& fragmentPath) {
+std::shared_ptr<graphics::Shader> ResourceManager::LoadShader(const std::string& vertexPath, const std::string& fragmentPath,
+                                                              const std::string& geometryPath) {
     std::string name = ExtractName(vertexPath);
     auto it = m_Shaders.find(name);
     if (it != m_Shaders.end())
         return it->second;
 
     try {
-        auto shader = std::make_shared<graphics::Shader>(vertexPath, fragmentPath);
+        auto shader = std::make_shared<graphics::Shader>(vertexPath, fragmentPath, geometryPath);
         m_Shaders[name] = shader;
         return shader;
     } catch (const std::exception& e) {
@@ -31,6 +32,7 @@ std::shared_ptr<graphics::Shader> ResourceManager::LoadShader(const std::string&
         return nullptr;
     }
 }
+
 
 std::shared_ptr<graphics::Shader> ResourceManager::GetShader(const std::string& name) {
     auto it = m_Shaders.find(name);
@@ -62,18 +64,36 @@ std::shared_ptr<graphics::Texture> ResourceManager::GetTexture(const std::string
     return nullptr;
 }
 
-std::shared_ptr<graphics::Model> ResourceManager::LoadModel(const std::string& modelPath) {
+std::shared_ptr<graphics::Model> ResourceManager::LoadModel(const std::string& modelPath, bool useSRGB) {
     std::string name = ExtractName(modelPath);
     auto it = m_Models.find(name);
     if (it != m_Models.end())
         return it->second;
 
     try {
-        auto model = std::make_shared<graphics::Model>(modelPath,false);
+        auto model = std::make_shared<graphics::Model>(modelPath, useSRGB);
         m_Models[name] = model;
         return model;
     } catch (const std::exception& e) {
         std::cerr << "Failed to load model: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+std::shared_ptr<graphics::Model> ResourceManager::LoadModel(const std::string& name,
+                                                            const std::vector<graphics::Vertex>& vertices,
+                                                            const std::string& texturePath,
+                                                            bool useSRGB) {
+    auto it = m_Models.find(name);
+    if (it != m_Models.end())
+        return it->second;
+
+    try {
+        auto model = std::make_shared<graphics::Model>(vertices, texturePath, useSRGB);
+        m_Models[name] = model;
+        return model;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to load model from vertices: " << e.what() << std::endl;
         return nullptr;
     }
 }

@@ -10,13 +10,17 @@ namespace core {
 
 class ResourceManager {
 public:
-    static std::shared_ptr<graphics::Shader> LoadShader(const std::string& vertexPath, const std::string& fragmentPath);
+    static std::shared_ptr<graphics::Shader> LoadShader(const std::string& vertexPath, const std::string& fragmentPath,
+                                                        const std::string& geometryPath = "");
     static std::shared_ptr<graphics::Shader> GetShader(const std::string& name);
 
     static std::shared_ptr<graphics::Texture> LoadTexture(const std::string& texturePath);
     static std::shared_ptr<graphics::Texture> GetTexture(const std::string& name);
 
-    static std::shared_ptr<graphics::Model> LoadModel(const std::string& modelPath);
+    static std::shared_ptr<graphics::Model> LoadModel(const std::string& modelPath, bool useSRGB = false);
+    static std::shared_ptr<graphics::Model> LoadModel(const std::string& name, const std::vector<graphics::Vertex>& vertices, 
+                                                    const std::string& texturePath,
+                                                    bool useSRGB = false);
     static std::shared_ptr<graphics::Model> GetModel(const std::string& name);
 
 private:

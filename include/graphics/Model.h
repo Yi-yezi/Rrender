@@ -21,6 +21,7 @@ namespace graphics {
          * @param useSRGB 是否以sRGB格式加载纹理
          */
         Model(const std::string& path, bool useSRGB = true);
+        Model(const std::vector<Vertex>& vertices, const std::string& texturePath, bool useSRGB);
         ~Model() = default;
 
         Model(const Model&) = delete;
