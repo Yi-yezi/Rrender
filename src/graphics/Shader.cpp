@@ -101,6 +101,11 @@ namespace graphics {
         glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
     }
 
+    // 设置mat3类型uniform
+    void Shader::SetUniform(const std::string& name, const glm::mat3& value) {
+        glUniformMatrix3fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    }
+
     // 读取文件内容为字符串
     std::string Shader::ReadFile(const std::string& path) const {
         std::ifstream file(path);

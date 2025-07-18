@@ -39,7 +39,7 @@ ShadowMappingPipeline::ShadowMappingPipeline(
 
     m_MainShader->Bind();
     m_MainShader->SetUniform("u_DiffuseTexture", 0);
-    m_MainShader->SetUniform("u_ShadowMap", 15); 
+    m_MainShader->SetUniform("u_ShadowMap", 15);
 
 }
 

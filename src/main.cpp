@@ -14,6 +14,9 @@
     #include "pipeline/OutlinePipeline.h"
     #include "pipeline/ShadowMappingPipeline.h"
     #include "pipeline/PointShadowMappingPipeline.h"
+    #include "pipeline/DeferredShadingPipeline.h"
+    #include "pipeline/HDRPipeline.h"
+    #include "pipeline/PBRPipeline.h"
     #include "scene/Scene.h"
     #include "scene/Entity.h"
     #include "graphics/Light.h"
@@ -57,17 +60,22 @@
             //    PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
 
             auto mainShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows.vert"),
-                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows.frag"));
+                PathResolver::Resolve("shaders/pbr/pbr.vert"),
+                PathResolver::Resolve("shaders/pbr/pbr.frag"));
 
-            auto depthShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.vert"),
-                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.frag"),
-                PathResolver::Resolve("shaders/point_shadow_mapping/point_shadows_depth.geom"));
+            auto geometryShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/deferred/geometry_pass.vert"),
+                PathResolver::Resolve("shaders/deferred/geometry_pass.frag"));
+
+            auto hdrShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/hdr/hdr.vert"),
+                PathResolver::Resolve("shaders/hdr/hdr.frag"));
 
             auto debugShader = ResourceManager::LoadShader(
                 PathResolver::Resolve("shaders/shadow_mapping/debug.vert"),
                 PathResolver::Resolve("shaders/shadow_mapping/debug.frag"));
+
+            
 
             
 
@@ -100,7 +108,10 @@
             //        PathResolver::Resolve("shaders/outline/outline.vert"),
             //        PathResolver::Resolve("shaders/outline/outline.frag")));
             //ShadowMappingPipeline pipeline(depthShader, mainShader);
-            PointShadowMappingPipeline pipeline(depthShader, mainShader);
+            //PointShadowMappingPipeline pipeline(depthShader, mainShader);
+            //HDRPipeline pipeline(hdrShader,mainShader, windowPtr);
+            //DeferredShadingPipeline pipeline(geometryShader, mainShader, windowPtr);
+            PBRPipeline pipeline(mainShader, windowPtr);
 
 
             // 创建场景和实体
