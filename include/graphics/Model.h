@@ -7,7 +7,6 @@
 #include "graphics/Mesh.h"
 #include "graphics/Texture.h"
 
-
 namespace graphics {
 
     /**
@@ -19,9 +18,13 @@ namespace graphics {
          * @brief 加载模型
          * @param path    OBJ文件路径
          * @param useSRGB 是否以sRGB格式加载纹理
+         * @param drawMode 绘制模式（如GL_TRIANGLES/GL_TRIANGLE_STRIP）
          */
-        Model(const std::string& path, bool useSRGB = true);
-        Model(const std::vector<Vertex>& vertices, const std::string& texturePath, bool useSRGB);
+        Model(const std::string& path, bool useSRGB = true, GLenum drawMode = GL_TRIANGLES);
+        Model(const std::vector<Vertex>& vertices, const std::string& texturePath, bool useSRGB, GLenum drawMode = GL_TRIANGLES);
+        Model(const std::vector<Vertex>& vertices, const std::vector<std::string>& texturePaths, bool useSRGB, GLenum drawMode = GL_TRIANGLES);
+        Model(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<std::string>& texturePaths, bool useSRGB = true, GLenum drawMode = GL_TRIANGLES);
+        Model(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::string& texturePath, bool useSRGB, GLenum drawMode = GL_TRIANGLES);
         ~Model() = default;
 
         Model(const Model&) = delete;
@@ -44,8 +47,9 @@ namespace graphics {
         std::vector<TexturedMesh> m_Meshes; ///< 所有子网格及其纹理
         std::string m_Directory; ///< 模型文件所在目录
 
-        // 路径到纹理的缓存，避免重复加载
         std::unordered_map<std::string, std::shared_ptr<Texture>> m_TextureCache;
+
+        GLenum m_DrawMode = GL_TRIANGLES; // 新增成员，记录绘制模式
 
         /**
          * @brief 加载OBJ模型

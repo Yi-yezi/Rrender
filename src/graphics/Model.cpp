@@ -1,4 +1,4 @@
-﻿    #include "graphics/Model.h"
+﻿#include "graphics/Model.h"
     #define TINYOBJLOADER_IMPLEMENTATION
     #include <tiny_obj_loader.h>
     #include <iostream>
@@ -8,18 +8,54 @@
     namespace graphics {
 
         // 构造函数：加载模型
-        Model::Model(const std::string& path, bool useSRGB) {
+        Model::Model(const std::string& path, bool useSRGB, GLenum drawMode)
+        {
+            m_DrawMode = drawMode;
             LoadModel(path, useSRGB);
         }
 
-        Model::Model(const std::vector<Vertex>& vertices, const std::string& texturePath, bool useSRGB) {
+        Model::Model(const std::vector<Vertex>& vertices, const std::string& texturePath, bool useSRGB, GLenum drawMode)
+        {
             std::vector<std::shared_ptr<Texture>> textures;
             if (!texturePath.empty()) {
                 if (auto tex = LoadMaterialTexture("", texturePath, useSRGB)) {
                     textures.push_back(tex);
                 }
             }
-            m_Meshes.emplace_back(TexturedMesh{Mesh(vertices), textures});
+            m_Meshes.emplace_back(TexturedMesh{Mesh(vertices, drawMode), textures});
+        }
+
+        Model::Model(const std::vector<Vertex>& vertices, const std::vector<std::string>& texturePaths, bool useSRGB, GLenum drawMode)
+        {
+            std::vector<std::shared_ptr<Texture>> textures;
+            for (const auto& texturePath : texturePaths) {
+                if (auto tex = LoadMaterialTexture("", texturePath, useSRGB)) {
+                    textures.push_back(tex);
+                }
+            }
+            m_Meshes.emplace_back(TexturedMesh{Mesh(vertices, drawMode), textures});
+        }
+
+        Model::Model(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::string& texturePath, bool useSRGB, GLenum drawMode)
+        {
+            std::vector<std::shared_ptr<Texture>> textures;
+            if (!texturePath.empty()) {
+                if (auto tex = LoadMaterialTexture("", texturePath, useSRGB)) {
+                    textures.push_back(tex);
+                }
+            }
+            m_Meshes.emplace_back(TexturedMesh{Mesh(vertices, indices, drawMode), textures});
+        }
+
+        Model::Model(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<std::string>& texturePaths, bool useSRGB, GLenum drawMode)
+        {
+            std::vector<std::shared_ptr<Texture>> textures;
+            for (const auto& texturePath : texturePaths) {
+                if (auto tex = LoadMaterialTexture("", texturePath, useSRGB)) {
+                    textures.push_back(tex);
+                }
+            }
+            m_Meshes.emplace_back(TexturedMesh{Mesh(vertices, indices, drawMode), textures});
         }
 
         // 绘制所有子网格及其纹理
@@ -160,7 +196,6 @@
                                                             bool useSRGB) {
             std::filesystem::path fullPath = std::filesystem::path(baseDir) / texPath;
             std::string fullPathStr = fullPath.string();
-                                                            
             auto it = m_TextureCache.find(fullPathStr);
             if (it != m_TextureCache.end()) {
                 return it->second;

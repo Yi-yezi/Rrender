@@ -17,6 +17,7 @@
     #include "pipeline/DeferredShadingPipeline.h"
     #include "pipeline/HDRPipeline.h"
     #include "pipeline/PBRPipeline.h"
+    #include "pipeline/IBLPipeline.h"
     #include "scene/Scene.h"
     #include "scene/Entity.h"
     #include "graphics/Light.h"
@@ -59,45 +60,79 @@
             //auto model = ResourceManager::LoadModel(
             //    PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
 
-            auto mainShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/pbr/pbr.vert"),
-                PathResolver::Resolve("shaders/pbr/pbr.frag"));
+            auto equirectangularMap2cubemapShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
+                PathResolver::Resolve("shaders/ibl/equirectangularMap2cubemap.frag"));
 
-            auto geometryShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/deferred/geometry_pass.vert"),
-                PathResolver::Resolve("shaders/deferred/geometry_pass.frag"));
+            auto irradianceShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
+                PathResolver::Resolve("shaders/ibl/irradiance_convolution.frag"));
+            
+            auto prefilterShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
+                PathResolver::Resolve("shaders/ibl/prefilter.frag"));
 
-            auto hdrShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/hdr/hdr.vert"),
-                PathResolver::Resolve("shaders/hdr/hdr.frag"));
+            auto brdfShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/brdf.vert"),
+                PathResolver::Resolve("shaders/ibl/brdf.frag"));
+            
+            auto backgroundShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/background.vert"),
+                PathResolver::Resolve("shaders/ibl/background.frag"));
 
-            auto debugShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/shadow_mapping/debug.vert"),
-                PathResolver::Resolve("shaders/shadow_mapping/debug.frag"));
-
+            auto pbrShader = ResourceManager::LoadShader(
+                PathResolver::Resolve("shaders/ibl/pbr.vert"),
+                PathResolver::Resolve("shaders/ibl/pbr.frag"));
             
 
+
+
             
-
-
-
-
-
             // 使用自定义顶点数据创建模型
-            auto cubeModel = ResourceManager::LoadModel(
-                "cube",
-                ParseVertexData(cubeVertices,36), // 使用自定义立方体顶点数据
-                PathResolver::Resolve("assets/textures/wood.png"),
-                false);
+            std::vector<Vertex> vertices;
+            std::vector<unsigned int> indices;
+            utils::GenerateSphere(vertices, indices);
+            auto ironSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+                PathResolver::Resolve("assets/textures/pbr/rusted_iron/albedo.png"),
+                PathResolver::Resolve("assets/textures/pbr/rusted_iron/normal.png"),
+                PathResolver::Resolve("assets/textures/pbr/rusted_iron/metallic.png"),
+                PathResolver::Resolve("assets/textures/pbr/rusted_iron/roughness.png"),
+                PathResolver::Resolve("assets/textures/pbr/rusted_iron/ao.png")
+            }, false, GL_TRIANGLE_STRIP);
 
-            auto planeModel = ResourceManager::LoadModel(
-                "plane",
-                ParseVertexData(planeVertices, 6), // 使用自定义平面顶点数据
-                PathResolver::Resolve("assets/textures/wood.png"),
-                false);
+            auto goldSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+                PathResolver::Resolve("assets/textures/pbr/gold/albedo.png"),
+                PathResolver::Resolve("assets/textures/pbr/gold/normal.png"),
+                PathResolver::Resolve("assets/textures/pbr/gold/metallic.png"),
+                PathResolver::Resolve("assets/textures/pbr/gold/roughness.png"),
+                PathResolver::Resolve("assets/textures/pbr/gold/ao.png")
+            }, false, GL_TRIANGLE_STRIP);
 
-            auto backpackModel = ResourceManager::LoadModel(
-                PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
+            auto grassSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+                PathResolver::Resolve("assets/textures/pbr/grass/albedo.png"),
+                PathResolver::Resolve("assets/textures/pbr/grass/normal.png"),
+                PathResolver::Resolve("assets/textures/pbr/grass/metallic.png"),
+                PathResolver::Resolve("assets/textures/pbr/grass/roughness.png"),
+                PathResolver::Resolve("assets/textures/pbr/grass/ao.png")
+            }, false, GL_TRIANGLE_STRIP);
+
+            auto plasticSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+                PathResolver::Resolve("assets/textures/pbr/plastic/albedo.png"),
+                PathResolver::Resolve("assets/textures/pbr/plastic/normal.png"),
+                PathResolver::Resolve("assets/textures/pbr/plastic/metallic.png"),
+                PathResolver::Resolve("assets/textures/pbr/plastic/roughness.png"),
+                PathResolver::Resolve("assets/textures/pbr/plastic/ao.png")
+            }, false, GL_TRIANGLE_STRIP);
+
+            auto wallSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+                PathResolver::Resolve("assets/textures/pbr/wall/albedo.png"),
+                PathResolver::Resolve("assets/textures/pbr/wall/normal.png"),
+                PathResolver::Resolve("assets/textures/pbr/wall/metallic.png"),
+                PathResolver::Resolve("assets/textures/pbr/wall/roughness.png"),
+                PathResolver::Resolve("assets/textures/pbr/wall/ao.png")
+            }, false, GL_TRIANGLE_STRIP);
+
+            
 
 
             // 创建渲染管线
@@ -111,15 +146,38 @@
             //PointShadowMappingPipeline pipeline(depthShader, mainShader);
             //HDRPipeline pipeline(hdrShader,mainShader, windowPtr);
             //DeferredShadingPipeline pipeline(geometryShader, mainShader, windowPtr);
-            PBRPipeline pipeline(mainShader, windowPtr);
+            IBLPipeline pipeline(
+                pbrShader,
+                irradianceShader,
+                prefilterShader,
+                brdfShader,
+                backgroundShader,
+                equirectangularMap2cubemapShader,
+                PathResolver::Resolve("assets/textures/hdr/newport_loft.hdr"),
+                windowPtr);
 
 
             // 创建场景和实体
             auto scenePtr = std::make_shared<Scene>();
-            auto entityPtr = std::make_shared<Entity>(backpackModel);
-            entityPtr->SetPosition(glm::vec3(-1.0f,1.0f,0.2f));
-            entityPtr->SetScale(glm::vec3(0.2f));
-            scenePtr->AddEntity(entityPtr);
+            auto entity = std::make_shared<Entity>(ironSphereModel);
+            entity->SetPosition(glm::vec3(-5.0, 0.0, 2.0));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(goldSphereModel);
+            entity->SetPosition(glm::vec3(-3.0, 0.0, 2.0));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(grassSphereModel);
+            entity->SetPosition(glm::vec3(-1.0, 0.0, 2.0));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(plasticSphereModel);
+            entity->SetPosition(glm::vec3(1.0, 0.0, 2.0));
+            scenePtr->AddEntity(entity);
+            entity = std::make_shared<Entity>(wallSphereModel);
+            entity->SetPosition(glm::vec3(3.0, 0.0, 2.0));
+            scenePtr->AddEntity(entity);
+            //auto entityPtr = std::make_shared<Entity>(backpackModel);
+            //entityPtr->SetPosition(glm::vec3(-1.0f,1.0f,0.2f));
+            //entityPtr->SetScale(glm::vec3(0.2f));
+            //scenePtr->AddEntity(entityPtr);
 
             //auto entity = std::make_shared<Entity>(cubeModel);
             //entity->SetPosition(glm::vec3(0.0f));
@@ -127,25 +185,25 @@
             //scenePtr->AddEntity(entity);
             //添加多个实体
 
-            auto entity = std::make_shared<Entity>(cubeModel);
-            entity->SetPosition(glm::vec3(0.0f, 1.5f, 0.0));
-            entity->SetScale(glm::vec3(0.5f));
-            scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(cubeModel);
-            entity->SetPosition(glm::vec3(2.0f, 0.0f, 1.0));
-            entity->SetScale(glm::vec3(0.5f));
-            scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(cubeModel);
-            entity->SetPosition(glm::vec3(-1.0f, 0.0f, 2.0));
-            entity->SetRotation(glm::vec3(0.0f, 60.0f, 0.0f));
-            entity->SetScale(glm::vec3(0.25f));
-            scenePtr->AddEntity(entity);
+            //auto entity = std::make_shared<Entity>(cubeModel);
+            //entity->SetPosition(glm::vec3(0.0f, 1.5f, 0.0));
+            //entity->SetScale(glm::vec3(0.5f));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(cubeModel);
+            //entity->SetPosition(glm::vec3(2.0f, 0.0f, 1.0));
+            //entity->SetScale(glm::vec3(0.5f));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(cubeModel);
+            //entity->SetPosition(glm::vec3(-1.0f, 0.0f, 2.0));
+            //entity->SetRotation(glm::vec3(0.0f, 60.0f, 0.0f));
+            //entity->SetScale(glm::vec3(0.25f));
+            //scenePtr->AddEntity(entity);
 
 
             //添加平面实体
-            auto planeEntity = std::make_shared<Entity>(planeModel);
-            planeEntity->SetPosition(glm::vec3(0.0f));
-            scenePtr->AddEntity(planeEntity);
+            //auto planeEntity = std::make_shared<Entity>(planeModel);
+            //planeEntity->SetPosition(glm::vec3(0.0f));
+            //scenePtr->AddEntity(planeEntity);
 
             
 
@@ -158,11 +216,35 @@
 
             // 添加点光源
             auto pointLight = std::make_shared<PointLight>();
-            pointLight->SetPosition(glm::vec3(2.0f, 4.0f, 1.0f));
-            pointLight->SetColor(glm::vec3(1.0f));
+            pointLight->SetPosition(glm::vec3(-10.0f,  10.0f, 10.0f));
+            pointLight->SetColor(glm::vec3(300.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(pointLight);
+
+            pointLight = std::make_shared<PointLight>();
+            pointLight->SetPosition(glm::vec3( 10.0f,  10.0f, 10.0f));
+            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetIntensity(1.0f);
+            pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
+            scenePtr->AddLight(pointLight);
+
+            pointLight = std::make_shared<PointLight>();
+            pointLight->SetPosition(glm::vec3(-10.0f, -10.0f, 10.0f));
+            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetIntensity(1.0f);
+            pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
+            scenePtr->AddLight(pointLight);
+
+            pointLight = std::make_shared<PointLight>();
+            pointLight->SetPosition(glm::vec3( 10.0f, -10.0f, 10.0f));
+            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetIntensity(1.0f);
+            pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
+            scenePtr->AddLight(pointLight);
+
+
+
 
             // 添加聚光灯
             auto spotLight = std::make_shared<SpotLight>();

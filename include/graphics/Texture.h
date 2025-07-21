@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <glad/glad.h>
@@ -15,7 +15,7 @@ namespace graphics {
          * @param path      纹理图片路径
          * @param useSRGB   是否使用sRGB格式加载（用于PBR或Gamma矫正）
          */
-        explicit Texture(const std::string& path, bool useSRGB = false);
+        explicit Texture(const std::string &path, bool useSRGB = false, bool useFloat = false);
 
         // 禁用拷贝构造和赋值
         Texture(const Texture&) = delete;
@@ -42,7 +42,7 @@ namespace graphics {
         unsigned int m_ID = 0;
         int m_Width = 0, m_Height = 0, m_Channels = 0;
 
-        void LoadFromFile(const std::string& path, bool useSRGB);
+        void LoadFromFile(const std::string& path, bool useSRGB, bool useFloat = false);
     };
 
 } // namespace graphics

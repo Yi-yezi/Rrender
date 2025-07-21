@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <glm/glm.hpp>
@@ -14,8 +14,9 @@ namespace graphics {
 
     class Mesh {
     public:
-        explicit Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
-        explicit Mesh(const std::vector<Vertex>& vertices);
+        // 新增 drawMode 参数，默认 triangles
+        explicit Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, GLenum drawMode = GL_TRIANGLES);
+        explicit Mesh(const std::vector<Vertex>& vertices, GLenum drawMode = GL_TRIANGLES);
         ~Mesh();
 
         void Draw() const;
@@ -29,8 +30,9 @@ namespace graphics {
     private:
         unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
         size_t m_IndexCount = 0;
-        bool m_UseEBO = true; // 默认为 true，用于判断是否使用 glDrawElements
+        bool m_UseEBO = true;
         GLsizei m_VertexCount = 0;
+        GLenum m_DrawMode = GL_TRIANGLES; // 新增成员
 
         void SetupMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
         void SetupMesh(const std::vector<Vertex>& vertices);

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include "scene/Scene.h"
 #include "graphics/Camera.h"

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "pipeline/RenderPipeline.h"
 #include "core/Window.h"
 #include "graphics/Shader.h"
