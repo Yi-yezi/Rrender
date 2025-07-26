@@ -33,7 +33,7 @@ void OutlinePipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_baseShader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];
@@ -78,7 +78,7 @@ void OutlinePipeline::Render(const std::shared_ptr<scene::Scene>& scene,
 
     for (const auto& entity : scene->GetEntities()) {
         m_baseShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw(m_baseShader);
     }
 
     m_baseShader->Unbind();
@@ -97,7 +97,7 @@ void OutlinePipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     for (const auto& entity : scene->GetEntities()) {
         glm::mat4 scaledModel = glm::scale(entity->GetModelMatrix(), glm::vec3(scale));
         m_outlineShader->SetUniform("u_Model", scaledModel);
-        entity->Draw();
+        //entity->Draw(m_outlineShader);
     }
 
     // 恢复状态

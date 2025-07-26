@@ -5,18 +5,20 @@
 
 namespace graphics {
 
+enum class LightType {
+    Directional,
+    Point,
+    Spot
+};
+
 class Light {
 public:
-    enum class Type {
-        Directional,
-        Point,
-        Spot
-    };
 
-    explicit Light(Type type) : m_Type(type) {}
+
+    explicit Light(LightType type) : m_Type(type) {}
     virtual ~Light() = default;
 
-    Type GetType() const { return m_Type; }
+    LightType GetType() const { return m_Type; }
 
     // 颜色和强度是所有光源共有
     void SetColor(const glm::vec3& color) { m_Color = color; }
@@ -41,12 +43,13 @@ public:
     virtual float GetInnerCutOff() const { return 0.0f; }
     virtual float GetOuterCutOff() const { return 0.0f; }
 
+
     // 启用开关（可选）
     void SetEnabled(bool enabled) { m_Enabled = enabled; }
     bool IsEnabled() const { return m_Enabled; }
 
 protected:
-    Type m_Type;
+    LightType m_Type;
     glm::vec3 m_Color{1.0f};   ///< 默认白光
     float m_Intensity{1.0f};   ///< 强度（乘在颜色上）
     bool m_Enabled{true};
@@ -56,10 +59,16 @@ protected:
 // 方向光
 class DirectionalLight : public Light {
 public:
-    DirectionalLight() : Light(Type::Directional) {}
+    DirectionalLight() : Light(LightType::Directional) {}
 
     const glm::vec3& GetDirection() const override { return m_Direction; }
     void SetDirection(const glm::vec3& dir) override { m_Direction = glm::normalize(dir); }
+    glm::mat4 GetLightVP(const float aspectRatio = 1.0f, const float nearPlane = 1.0f, float farPlane = 7.5f) const {
+        // 假设正交投影，视图矩阵为单位矩阵
+        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
+        glm::mat4 lightView = glm::lookAt(-normalize(m_Direction) * 10.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        return lightProjection * lightView;
+    }
 
 private:
     glm::vec3 m_Direction = glm::vec3(-0.2f, -1.0f, -0.3f); // 默认方向
@@ -69,7 +78,7 @@ private:
 // 点光源
 class PointLight : public Light {
 public:
-    PointLight() : Light(Type::Point) {}
+    PointLight() : Light(LightType::Point) {}
 
     const glm::vec3& GetPosition() const override { return m_Position; }
     void SetPosition(const glm::vec3& pos) override { m_Position = pos; }
@@ -82,6 +91,22 @@ public:
     float GetConstant() const override { return m_Constant; }
     float GetLinear() const override { return m_Linear; }
     float GetQuadratic() const override { return m_Quadratic; }
+    // 获取立方体贴图的VP矩阵
+    std::vector<glm::mat4> GetLightVP(const float aspectRatio = 1.0f, const float nearPlane = 1.0f, const float farPlane = 7.5f) const {
+        glm::mat4 lightProjection = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
+        std::vector<glm::mat4> lightViews(6);
+        // 六个方向的视图矩阵
+        lightViews[0] = glm::lookAt(m_Position, m_Position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)); // +X
+        lightViews[1] = glm::lookAt(m_Position, m_Position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)); // -X
+        lightViews[2] = glm::lookAt(m_Position, m_Position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // +Y
+        lightViews[3] = glm::lookAt(m_Position, m_Position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)); // -Y
+        lightViews[4] = glm::lookAt(m_Position, m_Position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)); // +Z
+        lightViews[5] = glm::lookAt(m_Position, m_Position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)); // -Z
+        for (auto& view : lightViews) {
+            view = lightProjection * view; // 组合投影和视图矩阵
+        }
+        return lightViews;
+    }
 
 private:
     glm::vec3 m_Position = glm::vec3(0.0f);
@@ -94,7 +119,7 @@ private:
 // 聚光灯
 class SpotLight : public Light {
 public:
-    SpotLight() : Light(Type::Spot) {}
+    SpotLight() : Light(LightType::Spot) {}
 
     const glm::vec3& GetPosition() const override { return m_Position; }
     void SetPosition(const glm::vec3& pos) override { m_Position = pos; }
@@ -117,6 +142,12 @@ public:
     float GetConstant() const override { return m_Constant; }
     float GetLinear() const override { return m_Linear; }
     float GetQuadratic() const override { return m_Quadratic; }
+    // 获取聚光灯的VP矩阵
+    glm::mat4 GetLightVP(const float aspectRatio = 1.0f, const float nearPlane = 1.0f, const float farPlane = 7.5f) const {
+        glm::mat4 lightProjection = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
+        glm::mat4 lightView = glm::lookAt(m_Position, m_Position + m_Direction, glm::vec3(0.0f, 1.0f, 0.0f));
+        return lightProjection * lightView;
+    }
 
 private:
     glm::vec3 m_Position = glm::vec3(0.0f);

@@ -10,6 +10,10 @@ target_include_directories(stbimage PUBLIC STBImage/include)
 add_library(tinyobjloader INTERFACE)
 target_include_directories(tinyobjloader INTERFACE ${PROJECT_SOURCE_DIR}/external/TinyObjLoader)
 
+# tinygltfloader
+add_library(tinygltfloader INTERFACE)
+target_include_directories(tinygltfloader INTERFACE ${PROJECT_SOURCE_DIR}/external/TinyGLTFLoader)
+
 # GLFW（预编译）
 add_library(glfw INTERFACE)
 target_include_directories(glfw INTERFACE ${PROJECT_SOURCE_DIR}/external/GLFW)

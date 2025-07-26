@@ -82,7 +82,7 @@ void HDRPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_MainShader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];
@@ -127,7 +127,7 @@ void HDRPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
 
     for (const auto& entity : scene->GetEntities()) {
         m_MainShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw();
     }
     m_MainShader->Unbind();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

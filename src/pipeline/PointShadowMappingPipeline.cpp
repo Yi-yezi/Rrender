@@ -45,7 +45,7 @@ void PointShadowMappingPipeline::RenderDepthPass(const std::shared_ptr<scene::Sc
 
     // 获取第一个点光源
     const auto& lights = scene->GetLights();
-    if (lights.empty() || lights[0]->GetType() != graphics::Light::Type::Point)
+    if (lights.empty() || lights[0]->GetType() != graphics::LightType::Point)
         return;
     auto light = std::dynamic_pointer_cast<graphics::PointLight>(lights[0]);
     m_LightPos = light->GetPosition();
@@ -69,7 +69,7 @@ void PointShadowMappingPipeline::RenderDepthPass(const std::shared_ptr<scene::Sc
 
     for (const auto& entity : scene->GetEntities()) {
         m_DepthShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw(m_MainShader);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -95,7 +95,7 @@ void PointShadowMappingPipeline::Render(const std::shared_ptr<scene::Scene>& sce
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_MainShader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];
@@ -143,7 +143,7 @@ void PointShadowMappingPipeline::Render(const std::shared_ptr<scene::Scene>& sce
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_DepthCubemap);
     for (const auto& entity : scene->GetEntities()) {
         m_MainShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw(m_MainShader);
     }
 
     m_MainShader->Unbind();

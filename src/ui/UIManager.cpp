@@ -95,7 +95,7 @@ void UIManager::RenderUI(const std::shared_ptr<graphics::Camera>& camera,
             }
 
             // Point/Spot 额外参数
-            if (light->GetType() != graphics::Light::Type::Directional) {
+            if (light->GetType() != graphics::LightType::Directional) {
                 glm::vec3 pos = light->GetPosition();
                 if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
                     light->SetPosition(pos);
@@ -110,7 +110,7 @@ void UIManager::RenderUI(const std::shared_ptr<graphics::Camera>& camera,
                 light->SetAttenuation(c, l, q);
             }
 
-            if (light->GetType() == graphics::Light::Type::Spot) {
+            if (light->GetType() == graphics::LightType::Spot) {
                 float inner = light->GetInnerCutOff();
                 float outer = light->GetOuterCutOff();
                 ImGui::SliderFloat("Inner Cutoff", &inner, 0.0f, 1.0f);

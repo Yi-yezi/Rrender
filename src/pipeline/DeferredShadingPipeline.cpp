@@ -92,7 +92,7 @@ void DeferredShadingPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
 
     for (const auto& entity : scene->GetEntities()) {
         m_GeometryShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw();
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -118,7 +118,7 @@ void DeferredShadingPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_LightingShader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];

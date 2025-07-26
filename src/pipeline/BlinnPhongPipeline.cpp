@@ -28,7 +28,7 @@ void BlinnPhongPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_Shader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];
@@ -73,7 +73,7 @@ void BlinnPhongPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
 
     for (const auto& entity : scene->GetEntities()) {
         m_Shader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw();
     }
 
     m_Shader->Unbind();

@@ -18,6 +18,9 @@
     #include "pipeline/HDRPipeline.h"
     #include "pipeline/PBRPipeline.h"
     #include "pipeline/IBLPipeline.h"
+    #include "pipeline/BRDFPipeline.h"
+    #include "renderPass/ShadowPass.h"
+    #include "pipeline/BRDFPipeline.h"
     #include "scene/Scene.h"
     #include "scene/Entity.h"
     #include "graphics/Light.h"
@@ -31,6 +34,7 @@
     using namespace scene;
     using namespace pipeline;
     using namespace ui;
+    using namespace utils;
 
     int main() {
         try {
@@ -46,91 +50,58 @@
             InputManager::Init(windowPtr);
             auto cameraPtr = std::make_shared<Camera>(Camera::ProjectionType::Perspective);
             cameraPtr->SetPosition(glm::vec3(0.0f, 1.5f, 5.0f));
-            //int width, height;
-            //windowPtr->GetFrameBufferSize(width, height);
-            //cameraPtr->SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
-            //glViewport(0, 0, width, height);
             auto controllerPtr = std::make_shared<CameraController>(cameraPtr);
             InputManager::RegisterListener(controllerPtr);
 
-            // 载入着色器和模型资源
-            //auto shader = ResourceManager::LoadShader(
-            //    PathResolver::Resolve("shaders/blinn_phong/blinnphong.vert"),
-            //    PathResolver::Resolve("shaders/blinn_phong/blinnphong.frag"));
-            //auto model = ResourceManager::LoadModel(
-            //    PathResolver::Resolve("assets/objects/backpack/backpack.obj"));
 
-            auto equirectangularMap2cubemapShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
-                PathResolver::Resolve("shaders/ibl/equirectangularMap2cubemap.frag"));
-
-            auto irradianceShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
-                PathResolver::Resolve("shaders/ibl/irradiance_convolution.frag"));
-            
-            auto prefilterShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/cubemap.vert"),
-                PathResolver::Resolve("shaders/ibl/prefilter.frag"));
-
-            auto brdfShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/brdf.vert"),
-                PathResolver::Resolve("shaders/ibl/brdf.frag"));
-            
-            auto backgroundShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/background.vert"),
-                PathResolver::Resolve("shaders/ibl/background.frag"));
-
-            auto pbrShader = ResourceManager::LoadShader(
-                PathResolver::Resolve("shaders/ibl/pbr.vert"),
-                PathResolver::Resolve("shaders/ibl/pbr.frag"));
             
 
 
 
             
             // 使用自定义顶点数据创建模型
-            std::vector<Vertex> vertices;
-            std::vector<unsigned int> indices;
-            utils::GenerateSphere(vertices, indices);
-            auto ironSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
-                PathResolver::Resolve("assets/textures/pbr/rusted_iron/albedo.png"),
-                PathResolver::Resolve("assets/textures/pbr/rusted_iron/normal.png"),
-                PathResolver::Resolve("assets/textures/pbr/rusted_iron/metallic.png"),
-                PathResolver::Resolve("assets/textures/pbr/rusted_iron/roughness.png"),
-                PathResolver::Resolve("assets/textures/pbr/rusted_iron/ao.png")
-            }, false, GL_TRIANGLE_STRIP);
-
-            auto goldSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
-                PathResolver::Resolve("assets/textures/pbr/gold/albedo.png"),
-                PathResolver::Resolve("assets/textures/pbr/gold/normal.png"),
-                PathResolver::Resolve("assets/textures/pbr/gold/metallic.png"),
-                PathResolver::Resolve("assets/textures/pbr/gold/roughness.png"),
-                PathResolver::Resolve("assets/textures/pbr/gold/ao.png")
-            }, false, GL_TRIANGLE_STRIP);
-
-            auto grassSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
-                PathResolver::Resolve("assets/textures/pbr/grass/albedo.png"),
-                PathResolver::Resolve("assets/textures/pbr/grass/normal.png"),
-                PathResolver::Resolve("assets/textures/pbr/grass/metallic.png"),
-                PathResolver::Resolve("assets/textures/pbr/grass/roughness.png"),
-                PathResolver::Resolve("assets/textures/pbr/grass/ao.png")
-            }, false, GL_TRIANGLE_STRIP);
-
-            auto plasticSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
-                PathResolver::Resolve("assets/textures/pbr/plastic/albedo.png"),
-                PathResolver::Resolve("assets/textures/pbr/plastic/normal.png"),
-                PathResolver::Resolve("assets/textures/pbr/plastic/metallic.png"),
-                PathResolver::Resolve("assets/textures/pbr/plastic/roughness.png"),
-                PathResolver::Resolve("assets/textures/pbr/plastic/ao.png")
-            }, false, GL_TRIANGLE_STRIP);
-
-            auto wallSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
-                PathResolver::Resolve("assets/textures/pbr/wall/albedo.png"),
-                PathResolver::Resolve("assets/textures/pbr/wall/normal.png"),
-                PathResolver::Resolve("assets/textures/pbr/wall/metallic.png"),
-                PathResolver::Resolve("assets/textures/pbr/wall/roughness.png"),
-                PathResolver::Resolve("assets/textures/pbr/wall/ao.png")
-            }, false, GL_TRIANGLE_STRIP);
+            //std::vector<Vertex> vertices;
+            //std::vector<unsigned int> indices;
+            //utils::GenerateSphere(vertices, indices);
+            //auto ironSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+            //    PathResolver::Resolve("assets/textures/pbr/rusted_iron/albedo.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/rusted_iron/normal.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/rusted_iron/metallic.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/rusted_iron/roughness.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/rusted_iron/ao.png")
+            //}, false, GL_TRIANGLE_STRIP);
+//
+            //auto goldSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+            //    PathResolver::Resolve("assets/textures/pbr/gold/albedo.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/gold/normal.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/gold/metallic.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/gold/roughness.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/gold/ao.png")
+            //}, false, GL_TRIANGLE_STRIP);
+//
+            //auto grassSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+            //    PathResolver::Resolve("assets/textures/pbr/grass/albedo.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/grass/normal.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/grass/metallic.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/grass/roughness.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/grass/ao.png")
+            //}, false, GL_TRIANGLE_STRIP);
+//
+            //auto plasticSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+            //    PathResolver::Resolve("assets/textures/pbr/plastic/albedo.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/plastic/normal.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/plastic/metallic.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/plastic/roughness.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/plastic/ao.png")
+            //}, false, GL_TRIANGLE_STRIP);
+//
+            //auto wallSphereModel = std::make_shared<Model>(vertices, indices,std::vector<std::string>{
+            //    PathResolver::Resolve("assets/textures/pbr/wall/albedo.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/wall/normal.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/wall/metallic.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/wall/roughness.png"),
+            //    PathResolver::Resolve("assets/textures/pbr/wall/ao.png")
+            //}, false, GL_TRIANGLE_STRIP);
 
             
 
@@ -146,34 +117,45 @@
             //PointShadowMappingPipeline pipeline(depthShader, mainShader);
             //HDRPipeline pipeline(hdrShader,mainShader, windowPtr);
             //DeferredShadingPipeline pipeline(geometryShader, mainShader, windowPtr);
-            IBLPipeline pipeline(
-                pbrShader,
-                irradianceShader,
-                prefilterShader,
-                brdfShader,
-                backgroundShader,
-                equirectangularMap2cubemapShader,
-                PathResolver::Resolve("assets/textures/hdr/newport_loft.hdr"),
-                windowPtr);
+            //IBLPipeline pipeline(
+            //    pbrShader,
+            //    irradianceShader,
+            //    prefilterShader,
+            //    brdfShader,
+            //    backgroundShader,
+            //    equirectangularMap2cubemapShader,
+            //    PathResolver::Resolve("assets/textures/hdr/newport_loft.hdr"),
+            //    windowPtr);
+            BRDFPipeline pipeline(windowPtr);
 
 
             // 创建场景和实体
             auto scenePtr = std::make_shared<Scene>();
-            auto entity = std::make_shared<Entity>(ironSphereModel);
-            entity->SetPosition(glm::vec3(-5.0, 0.0, 2.0));
+            auto robotModel = ResourceManager::LoadModel(PathResolver::Resolve("assets/objects/behemoth_from_horizon_zero_dawn.glb"));
+            auto entity = std::make_shared<Entity>(robotModel);
+            entity->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+            entity->SetScale(glm::vec3(0.5f));
             scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(goldSphereModel);
-            entity->SetPosition(glm::vec3(-3.0, 0.0, 2.0));
-            scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(grassSphereModel);
-            entity->SetPosition(glm::vec3(-1.0, 0.0, 2.0));
-            scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(plasticSphereModel);
-            entity->SetPosition(glm::vec3(1.0, 0.0, 2.0));
-            scenePtr->AddEntity(entity);
-            entity = std::make_shared<Entity>(wallSphereModel);
-            entity->SetPosition(glm::vec3(3.0, 0.0, 2.0));
-            scenePtr->AddEntity(entity);
+
+            //entity = std::make_shared<Entity>(robotModel);
+            //entity->SetPosition(glm::vec3(0.5f, 0.0f, 0.0f));
+            //entity->SetScale(glm::vec3(0.5f));
+            //scenePtr->AddEntity(entity);
+            //auto entity = std::make_shared<Entity>(ironSphereModel);
+            //entity->SetPosition(glm::vec3(-5.0, 0.0, 2.0));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(goldSphereModel);
+            //entity->SetPosition(glm::vec3(-3.0, 0.0, 2.0));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(grassSphereModel);
+            //entity->SetPosition(glm::vec3(-1.0, 0.0, 2.0));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(plasticSphereModel);
+            //entity->SetPosition(glm::vec3(1.0, 0.0, 2.0));
+            //scenePtr->AddEntity(entity);
+            //entity = std::make_shared<Entity>(wallSphereModel);
+            //entity->SetPosition(glm::vec3(3.0, 0.0, 2.0));
+            //scenePtr->AddEntity(entity);
             //auto entityPtr = std::make_shared<Entity>(backpackModel);
             //entityPtr->SetPosition(glm::vec3(-1.0f,1.0f,0.2f));
             //entityPtr->SetScale(glm::vec3(0.2f));
@@ -212,7 +194,7 @@
             dirLight->SetDirection(glm::vec3(2.0f, -4.0f, 1.0f));
             dirLight->SetColor(glm::vec3(1.0f));
             dirLight->SetIntensity(0.8f);
-            //scenePtr->AddLight(dirLight);
+            scenePtr->AddLight(dirLight);
 
             // 添加点光源
             auto pointLight = std::make_shared<PointLight>();
@@ -276,7 +258,8 @@
                 UIManager::BeginFrame();
 
                 // 渲染场景
-                pipeline.Render(scenePtr, cameraPtr);
+                pipeline.Render(scenePtr, cameraPtr, false, true);
+
 
                 // 渲染UI界面，传入相机和场景
                 UIManager::RenderUI(cameraPtr, scenePtr);

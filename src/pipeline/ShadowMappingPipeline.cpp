@@ -52,7 +52,7 @@ void ShadowMappingPipeline::RenderDepthPass(const std::shared_ptr<scene::Scene>&
     m_DepthShader->Bind();
     // 使用场景中的方向光
     const auto& lights = scene->GetLights();
-    if (!lights.empty() && lights[0]->GetType() == graphics::Light::Type::Directional) {
+    if (!lights.empty() && lights[0]->GetType() == graphics::LightType::Directional) {
         auto dirLight = std::dynamic_pointer_cast<graphics::DirectionalLight>(lights[0]);
         glm::vec3 lightDir = normalize(dirLight->GetDirection());
         glm::vec3 lightPos = -lightDir*4.5f;
@@ -67,7 +67,7 @@ void ShadowMappingPipeline::RenderDepthPass(const std::shared_ptr<scene::Scene>&
 
     for (const auto& entity : scene->GetEntities()) {
         m_DepthShader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw(m_MainShader);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -101,7 +101,7 @@ void ShadowMappingPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int lightCount = std::min(static_cast<int>(lights.size()), 4);
     m_MainShader->SetUniform("u_LightCount", lightCount);
 
-    using LightType = graphics::Light::Type;
+    using LightType = graphics::LightType;
 
     for (int i = 0; i < lightCount; ++i) {
         const auto& light = lights[i];
@@ -151,7 +151,7 @@ void ShadowMappingPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     for (const auto& entity : scene->GetEntities()) {
         m_MainShader->SetUniform("u_Model", entity->GetModelMatrix());
 
-        entity->Draw();
+        entity->Draw(m_MainShader);
     }
 
     m_MainShader->Unbind();

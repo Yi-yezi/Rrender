@@ -121,7 +121,7 @@ void IBLPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     // render entities
     for (const auto& entity : scene->GetEntities()) {
         m_PBRShader->SetUniform("model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw();
     }
     m_PBRShader->Unbind();
 

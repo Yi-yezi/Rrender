@@ -22,7 +22,7 @@ void BasicPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
 
     for (const auto& entity : scene->GetEntities()) {
         m_Shader->SetUniform("u_Model", entity->GetModelMatrix());
-        entity->Draw();
+        //entity->Draw();
     }
 
     m_Shader->Unbind();

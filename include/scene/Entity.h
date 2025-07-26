@@ -4,44 +4,48 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "graphics/Model.h"
+#include "graphics/Shader.h"
 
 namespace scene {
-
+    
     /**
-     * @brief 场景中一个实体对象，包含模型和变换（位置、旋转、缩放）
+     * @brief 场景中的一个实体，包含模型和变换信息
      */
     class Entity {
     public:
+        Entity() = default;
         explicit Entity(std::shared_ptr<graphics::Model> model);
-
-        // 设置 / 获取模型
+        
+        // 模型管理
         void SetModel(std::shared_ptr<graphics::Model> model);
         std::shared_ptr<graphics::Model> GetModel() const;
-
-        // 设置 / 获取位置
+        
+        // 变换操作
         void SetPosition(const glm::vec3& position);
         const glm::vec3& GetPosition() const;
-
-        // 设置 / 获取旋转（欧拉角，单位为度）
+        
         void SetRotation(const glm::vec3& rotation);
         const glm::vec3& GetRotation() const;
-
-        // 设置 / 获取缩放
+        
         void SetScale(const glm::vec3& scale);
         const glm::vec3& GetScale() const;
-
-        // 获取模型矩阵（最终变换矩阵）
+        
+        // 获取组合变换矩阵
         glm::mat4 GetModelMatrix() const;
-
-        // 绘制模型
-        void Draw() const;
-
+        
+        /**
+         * @brief 绘制实体（推荐方式：使用 Material 系统）
+         * @param shader 用于渲染的着色器程序
+         */
+        void Draw(std::shared_ptr<graphics::Shader> shader) const;
+        
+        
     private:
-        std::shared_ptr<graphics::Model> m_Model;
-
-        glm::vec3 m_Position{0.0f};
-        glm::vec3 m_Rotation{0.0f};  // pitch, yaw, roll
-        glm::vec3 m_Scale{1.0f};
+        std::shared_ptr<graphics::Model> m_Model = nullptr;
+        
+        glm::vec3 m_Position = glm::vec3(0.0f);
+        glm::vec3 m_Rotation = glm::vec3(0.0f);  // 欧拉角（度）
+        glm::vec3 m_Scale = glm::vec3(1.0f);
     };
 
 } // namespace scene

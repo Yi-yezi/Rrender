@@ -6,11 +6,15 @@
 namespace graphics {
 
     Texture::Texture(const std::string& path, bool useSRGB, bool useFloat) {
+        m_UseSRGB = useSRGB;   // 存储格式信息
+        m_UseFloat = useFloat; // 存储格式信息
         LoadFromFile(path, useSRGB, useFloat);
     }
 
     Texture::~Texture() {
-        glDeleteTextures(1, &m_ID);
+        if (m_ID != 0) {
+            glDeleteTextures(1, &m_ID);
+        }
     }
 
     Texture::Texture(Texture&& other) noexcept {
@@ -18,18 +22,36 @@ namespace graphics {
         m_Width = other.m_Width;
         m_Height = other.m_Height;
         m_Channels = other.m_Channels;
+        m_UseSRGB = other.m_UseSRGB;     
+        m_UseFloat = other.m_UseFloat;   
+        
         other.m_ID = 0;
+        other.m_Width = 0;
+        other.m_Height = 0;
+        other.m_Channels = 0;
+        other.m_UseSRGB = false;
+        other.m_UseFloat = false;
     }
 
     Texture& Texture::operator=(Texture&& other) noexcept {
         if (this != &other) {
-            glDeleteTextures(1, &m_ID);
+            if (m_ID != 0) {
+                glDeleteTextures(1, &m_ID);
+            }
 
             m_ID = other.m_ID;
             m_Width = other.m_Width;
             m_Height = other.m_Height;
             m_Channels = other.m_Channels;
+            m_UseSRGB = other.m_UseSRGB;     
+            m_UseFloat = other.m_UseFloat;   
+            
             other.m_ID = 0;
+            other.m_Width = 0;
+            other.m_Height = 0;
+            other.m_Channels = 0;
+            other.m_UseSRGB = false;
+            other.m_UseFloat = false;
         }
         return *this;
     }
@@ -100,9 +122,50 @@ namespace graphics {
         stbi_image_free(data);
     }
 
-    void Texture::Bind(unsigned int slot) const {
+    // GLTF/GLB字节数据构造函数（修正：移除 TextureType 参数）
+    Texture::Texture(const std::vector<unsigned char>& imageData, int width, int height, bool useSRGB, bool useFloat)
+    {
+        m_UseSRGB = useSRGB;   // 存储格式信息
+        m_UseFloat = useFloat; // 存储格式信息
+        m_Width = width;
+        m_Height = height;
+        m_Channels = 4; // GLTF标准通常为RGBA
+
+        glGenTextures(1, &m_ID);
+        glBindTexture(GL_TEXTURE_2D, m_ID);
+
+        GLenum internalFormat, dataFormat, type;
+        
+        if (useFloat) {
+            // 浮点格式
+            internalFormat = useSRGB ? GL_RGBA16F : GL_RGBA16F; // 浮点纹理通常不用sRGB
+            dataFormat = GL_RGBA;
+            type = GL_FLOAT;
+        } else {
+            // 8位整数格式
+            internalFormat = useSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+            dataFormat = GL_RGBA;
+            type = GL_UNSIGNED_BYTE;
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, type, imageData.data());
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    void Texture::Bind(int slot) const {
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_ID);
     }
 
-}
+    // 如果需要默认绑定槽位的便捷方法，可以保留一个重载
+    void Texture::Bind() const {
+        // 使用默认槽位 0，主要用于简单场景
+        Bind(0);
+    }
+
+} // namespace graphics

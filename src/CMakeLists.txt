@@ -21,6 +21,7 @@ target_link_libraries(Rrender
         ImGui 
         stbimage
         tinyobjloader
+        tinygltfloader
         glm
         opengl32
 )

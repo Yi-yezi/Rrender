@@ -47,9 +47,13 @@ namespace scene {
         return model;
     }
 
-    void Entity::Draw() const {
-        if (m_Model) {
-            m_Model->Draw();
+    void Entity::Draw(std::shared_ptr<graphics::Shader> shader) const {
+        if (m_Model && shader) {
+            // 设置模型矩阵到 shader
+            shader->SetUniform("u_model", GetModelMatrix());
+            
+            // 使用新的 Material 系统绘制模型
+            m_Model->Draw(shader);
         }
     }
 
