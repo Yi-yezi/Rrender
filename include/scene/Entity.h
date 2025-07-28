@@ -38,6 +38,10 @@ namespace scene {
          * @param shader 用于渲染的着色器程序
          */
         void Draw(std::shared_ptr<graphics::Shader> shader) const;
+
+        // 可见性控制
+        void SetVisible(bool visible);
+        bool IsVisible() const;
         
         
     private:
@@ -46,6 +50,7 @@ namespace scene {
         glm::vec3 m_Position = glm::vec3(0.0f);
         glm::vec3 m_Rotation = glm::vec3(0.0f);  // 欧拉角（度）
         glm::vec3 m_Scale = glm::vec3(1.0f);
+        bool m_Visible = true; // 默认可见
     };
 
 } // namespace scene

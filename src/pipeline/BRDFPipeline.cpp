@@ -52,18 +52,20 @@ BRDFPipeline::BRDFPipeline(std::shared_ptr<core::Window> windowPtr) {
 }
 
 void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
-                const std::shared_ptr<graphics::Camera>& camera,
-                bool useIBL, bool useShadow) {
+                const std::shared_ptr<graphics::Camera>& camera) {
     if (!scene || !camera) return;
 
-    m_ShadowPassPtr->Execute(scene); // 预处理阴影贴图
+    if(m_UseShadow)
+        m_ShadowPassPtr->Execute(scene); // 预处理阴影贴图
 
     
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    m_WindowPtr->GetSize(m_Width, m_Height);
-    glViewport(0, 0, m_Width, m_Height);
+    float renderWidth = m_WindowPtr->GetRenderWidth();
+    float renderHeight = m_WindowPtr->GetRenderHeight();
+    glViewport(0, 0, static_cast<int>(renderWidth), static_cast<int>(renderHeight));
+    camera->SetAspectRatio(m_WindowPtr->GetAspectRatio());
 
     m_BRDFShader->Bind();
 
@@ -72,43 +74,77 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int pointLightCount = 0;
     int spotLightCount = 0;
 
-    m_BRDFShader->SetUniform("u_enableShadow", useShadow);
-    m_BRDFShader->SetUniform("u_enableIBL", useIBL);
+    m_BRDFShader->SetUniform("u_enableShadow", m_UseShadow);
+    m_BRDFShader->SetUniform("u_enableIBL", m_UseIBL);
 
-    // 设置光源属性
+    // 设置光源属性 - 只处理启用的光源
     for (auto& light : scene->GetLights()) {
+        // 跳过禁用的光源
+        if (!light->IsEnabled()) {
+            continue;
+        }
+        
         switch (light->GetType()) {
             case graphics::LightType::Directional: {
+                if (directionalLightCount >= 4) break; // 防止超出着色器数组大小
+                
                 auto dirLight = std::dynamic_pointer_cast<graphics::DirectionalLight>(light);
                 std::string prefix = "u_dirLights[" + std::to_string(directionalLightCount) + "]";
+                
+                // 应用光源强度到颜色
+                glm::vec3 lightColor = dirLight->GetColor() * dirLight->GetIntensity();
+                
                 m_BRDFShader->SetUniform(prefix + ".direction", dirLight->GetDirection());
-                m_BRDFShader->SetUniform(prefix + ".color", dirLight->GetColor());
-                m_BRDFShader->SetUniform(prefix + ".shadowLayer", directionalLightCount); // 临时使用索引作为层
+                m_BRDFShader->SetUniform(prefix + ".color", lightColor);
+                m_BRDFShader->SetUniform(prefix + ".shadowLayer", directionalLightCount);
+                
                 // 方向光VP矩阵
-                m_BRDFShader->SetUniform("u_dirLightVP[" + std::to_string(directionalLightCount) + "]", dirLight->GetLightVP());
+                m_BRDFShader->SetUniform("u_dirLightVP[" + std::to_string(directionalLightCount) + "]", 
+                                       dirLight->GetLightVP());
                 directionalLightCount++;
                 break;
             }
             case graphics::LightType::Point: {
+                if (pointLightCount >= 4) break; // 防止超出着色器数组大小
+                
                 auto pointLight = std::dynamic_pointer_cast<graphics::PointLight>(light);
                 std::string prefix = "u_pointLights[" + std::to_string(pointLightCount) + "]";
+                
+                // 应用光源强度到颜色
+                glm::vec3 lightColor = pointLight->GetColor() * pointLight->GetIntensity();
+                
                 m_BRDFShader->SetUniform(prefix + ".position", pointLight->GetPosition());
-                m_BRDFShader->SetUniform(prefix + ".color", pointLight->GetColor());
-                m_BRDFShader->SetUniform(prefix + ".shadowLayer", pointLightCount); // 临时使用索引作为层
+                m_BRDFShader->SetUniform(prefix + ".color", lightColor);
+                m_BRDFShader->SetUniform(prefix + ".constant", pointLight->GetConstant());
+                m_BRDFShader->SetUniform(prefix + ".linear", pointLight->GetLinear());
+                m_BRDFShader->SetUniform(prefix + ".quadratic", pointLight->GetQuadratic());
+                m_BRDFShader->SetUniform(prefix + ".shadowLayer", pointLightCount);
+                
                 pointLightCount++;
                 break;
             }
             case graphics::LightType::Spot: {
+                if (spotLightCount >= 4) break; // 防止超出着色器数组大小
+                
                 auto spotLight = std::dynamic_pointer_cast<graphics::SpotLight>(light);
                 std::string prefix = "u_spotLights[" + std::to_string(spotLightCount) + "]";
+                
+                // 应用光源强度到颜色
+                glm::vec3 lightColor = spotLight->GetColor() * spotLight->GetIntensity();
+                
                 m_BRDFShader->SetUniform(prefix + ".position", spotLight->GetPosition());
                 m_BRDFShader->SetUniform(prefix + ".direction", spotLight->GetDirection());
-                m_BRDFShader->SetUniform(prefix + ".color", spotLight->GetColor());
+                m_BRDFShader->SetUniform(prefix + ".color", lightColor);
                 m_BRDFShader->SetUniform(prefix + ".innerCutOff", spotLight->GetInnerCutOff());
                 m_BRDFShader->SetUniform(prefix + ".outerCutOff", spotLight->GetOuterCutOff());
-                m_BRDFShader->SetUniform(prefix + ".shadowLayer", spotLightCount); // 临时使用索引作为层
+                m_BRDFShader->SetUniform(prefix + ".constant", spotLight->GetConstant());
+                m_BRDFShader->SetUniform(prefix + ".linear", spotLight->GetLinear());
+                m_BRDFShader->SetUniform(prefix + ".quadratic", spotLight->GetQuadratic());
+                m_BRDFShader->SetUniform(prefix + ".shadowLayer", spotLightCount);
+                
                 // 聚光灯VP矩阵
-                m_BRDFShader->SetUniform("u_spotLightVP[" + std::to_string(spotLightCount) + "]", spotLight->GetLightVP());
+                m_BRDFShader->SetUniform("u_spotLightVP[" + std::to_string(spotLightCount) + "]", 
+                                       spotLight->GetLightVP());
                 spotLightCount++;
                 break;
             }
@@ -117,6 +153,7 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
         }
     }
 
+    // 设置实际启用的光源数量
     m_BRDFShader->SetUniform("u_dirLightCount", directionalLightCount);
     m_BRDFShader->SetUniform("u_pointLightCount", pointLightCount);
     m_BRDFShader->SetUniform("u_spotLightCount", spotLightCount);
@@ -127,7 +164,7 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     m_BRDFShader->SetUniform("u_projection", camera->GetProjectionMatrix());
 
     // IBL 设置
-    if (useIBL) {
+    if (m_UseIBL) {
         m_IBLPassPtr->BindMap();
         m_BRDFShader->SetUniform("u_irradianceMap", graphics::TextureSlots::TEX_SLOT_IRRADIANCE);
         m_BRDFShader->SetUniform("u_prefilterMap", graphics::TextureSlots::TEX_SLOT_PREFILTER);
@@ -135,7 +172,7 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     }
 
     // 阴影贴图设置（如果启用阴影）
-    if (useShadow) {
+    if (m_UseShadow) {
         m_ShadowPassPtr->BindDirectionalShadowMap();
         m_BRDFShader->SetUniform("u_dirShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_DIR);
         m_ShadowPassPtr->BindPointShadowMap();
@@ -143,6 +180,8 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
         m_ShadowPassPtr->BindSpotShadowMap();
         m_BRDFShader->SetUniform("u_spotShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_SPOT);
     }
+
+    // 渲染场景中的所有实体
     for (auto& entity : scene->GetEntities()) {
         entity->Draw(m_BRDFShader);
     }
@@ -150,7 +189,7 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     m_BRDFShader->Unbind();
 
     // 渲染环境贴图背景
-    if (useIBL) {
+    if (m_UseIBL) {
         m_BackgroundShader->Bind();
         m_BackgroundShader->SetUniform("environmentMap", graphics::TextureSlots::TEX_SLOT_ENV_CUBEMAP);
         m_BackgroundShader->SetUniform("projection", camera->GetProjectionMatrix());
@@ -167,6 +206,21 @@ void BRDFPipeline::RenderCube() {
     glBindVertexArray(m_CubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+}
+
+bool BRDFPipeline::IsIBLEnabled() {
+    return m_UseIBL;
+}
+
+bool BRDFPipeline::IsShadowEnabled() {
+    return m_UseShadow;
+}
+
+void BRDFPipeline::SetIBL(bool enabled) {
+    m_UseIBL = enabled;
+}
+void BRDFPipeline::SetShadow(bool enabled) {
+    m_UseShadow = enabled;
 }
 
 } // namespace pipeline

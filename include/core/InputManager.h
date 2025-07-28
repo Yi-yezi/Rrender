@@ -23,6 +23,7 @@ public:
     static bool IsMouseButtonDown(int button);
     static bool IsMouseButtonPressed(int button);
     static bool IsMouseButtonReleased(int button);
+    static bool IsCameraMode();
 
     static float GetAspectRatio();
 

@@ -39,7 +39,7 @@
     int main() {
         try {
             // 创建窗口
-            auto windowPtr = std::make_shared<Window>(1280, 720, "Rrender Engine - BlinnPhong");
+            auto windowPtr = std::make_shared<Window>(1280, 720, "Rrender Engine - BRDF Pipeline Example");
 
             // 初始化GLAD
             if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -126,7 +126,7 @@
             //    equirectangularMap2cubemapShader,
             //    PathResolver::Resolve("assets/textures/hdr/newport_loft.hdr"),
             //    windowPtr);
-            BRDFPipeline pipeline(windowPtr);
+            auto pipelinePtr= std::make_shared<BRDFPipeline>(windowPtr);
 
 
             // 创建场景和实体
@@ -236,7 +236,7 @@
             spotLight->SetPosition(cameraPtr->GetPosition());
             spotLight->SetDirection(glm::normalize(cameraPtr->GetFront()));
             spotLight->SetColor(glm::vec3(200.0f));
-            spotLight->SetIntensity(300.0f);
+            spotLight->SetIntensity(1.0f);
             spotLight->SetCutOff(glm::cos(glm::radians(5.5f)), glm::cos(glm::radians(17.5f)));
             spotLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(spotLight);
@@ -261,11 +261,11 @@
                 UIManager::BeginFrame();
 
                 // 渲染场景
-                pipeline.Render(scenePtr, cameraPtr, true, true);
+                pipelinePtr->Render(scenePtr, cameraPtr);
 
 
                 // 渲染UI界面，传入相机和场景
-                UIManager::RenderUI(cameraPtr, scenePtr);
+                UIManager::RenderUI(cameraPtr, scenePtr,windowPtr,pipelinePtr);
 
                 // 结束UI绘制，提交绘制命令
                 UIManager::EndFrame();

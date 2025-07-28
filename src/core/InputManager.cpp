@@ -63,6 +63,10 @@ bool InputManager::IsMouseButtonReleased(int button) {
     return !s_MouseButtonState[button] && s_MouseButtonStateLast[button];
 }
 
+bool InputManager::IsCameraMode() {
+    return glfwGetInputMode(s_GLFWWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+
 std::pair<double, double> InputManager::GetMousePosition() {
     return {s_MouseX, s_MouseY};
 }

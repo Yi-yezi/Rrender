@@ -48,13 +48,21 @@ namespace scene {
     }
 
     void Entity::Draw(std::shared_ptr<graphics::Shader> shader) const {
-        if (m_Model && shader) {
+        if (m_Model && shader&& m_Visible) {
             // 设置模型矩阵到 shader
             shader->SetUniform("u_model", GetModelMatrix());
             
             // 使用新的 Material 系统绘制模型
             m_Model->Draw(shader);
         }
+    }
+
+    void Entity::SetVisible(bool visible) {
+        m_Visible = visible;
+    }
+
+    bool Entity::IsVisible() const {
+        return m_Visible;
     }
 
 }
