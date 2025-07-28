@@ -17,11 +17,13 @@ public:
                 const std::shared_ptr<graphics::Camera>& camera,
                 bool useIBL = false, bool useShadow = false);
 
+
 private:
     std::shared_ptr<ShadowPass> m_ShadowPassPtr; ///< 阴影渲染管线
     std::shared_ptr<IBLPass> m_IBLPassPtr; ///< IBL渲染管线
     std::shared_ptr<graphics::Shader> m_BRDFShader; ///< BRDF着色器
     std::shared_ptr<graphics::Shader> m_BackgroundShader; ///< 背景着色器
+    std::shared_ptr<graphics::Shader> m_DebugShader;
     int m_Width = 1280; ///< 窗口宽度
     int m_Height = 720; ///< 窗口高度
     unsigned int m_CubeVAO = 0; ///< 立方体VAO

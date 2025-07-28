@@ -72,7 +72,7 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     int pointLightCount = 0;
     int spotLightCount = 0;
 
-    m_BRDFShader->SetUniform("u_enableShadow", false);
+    m_BRDFShader->SetUniform("u_enableShadow", useShadow);
     m_BRDFShader->SetUniform("u_enableIBL", useIBL);
 
     // 设置光源属性
@@ -89,37 +89,37 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
                 directionalLightCount++;
                 break;
             }
-            //case graphics::LightType::Point: {
-            //    auto pointLight = std::dynamic_pointer_cast<graphics::PointLight>(light);
-            //    std::string prefix = "u_pointLights[" + std::to_string(pointLightCount) + "]";
-            //    m_BRDFShader->SetUniform(prefix + ".position", pointLight->GetPosition());
-            //    m_BRDFShader->SetUniform(prefix + ".color", pointLight->GetColor());
-            //    m_BRDFShader->SetUniform(prefix + ".shadowLayer", pointLightCount); // 临时使用索引作为层
-            //    pointLightCount++;
-            //    break;
-            //}
-            //case graphics::LightType::Spot: {
-            //    auto spotLight = std::dynamic_pointer_cast<graphics::SpotLight>(light);
-            //    std::string prefix = "u_spotLights[" + std::to_string(spotLightCount) + "]";
-            //    m_BRDFShader->SetUniform(prefix + ".position", spotLight->GetPosition());
-            //    m_BRDFShader->SetUniform(prefix + ".direction", spotLight->GetDirection());
-            //    m_BRDFShader->SetUniform(prefix + ".color", spotLight->GetColor());
-            //    m_BRDFShader->SetUniform(prefix + ".innerCutOff", spotLight->GetInnerCutOff());
-            //    m_BRDFShader->SetUniform(prefix + ".outerCutOff", spotLight->GetOuterCutOff());
-            //    m_BRDFShader->SetUniform(prefix + ".shadowLayer", spotLightCount); // 临时使用索引作为层
-            //    // 聚光灯VP矩阵
-            //    m_BRDFShader->SetUniform("u_spotLightVP[" + std::to_string(spotLightCount) + "]", spotLight->GetLightVP());
-            //    spotLightCount++;
-            //    break;
-            //}
+            case graphics::LightType::Point: {
+                auto pointLight = std::dynamic_pointer_cast<graphics::PointLight>(light);
+                std::string prefix = "u_pointLights[" + std::to_string(pointLightCount) + "]";
+                m_BRDFShader->SetUniform(prefix + ".position", pointLight->GetPosition());
+                m_BRDFShader->SetUniform(prefix + ".color", pointLight->GetColor());
+                m_BRDFShader->SetUniform(prefix + ".shadowLayer", pointLightCount); // 临时使用索引作为层
+                pointLightCount++;
+                break;
+            }
+            case graphics::LightType::Spot: {
+                auto spotLight = std::dynamic_pointer_cast<graphics::SpotLight>(light);
+                std::string prefix = "u_spotLights[" + std::to_string(spotLightCount) + "]";
+                m_BRDFShader->SetUniform(prefix + ".position", spotLight->GetPosition());
+                m_BRDFShader->SetUniform(prefix + ".direction", spotLight->GetDirection());
+                m_BRDFShader->SetUniform(prefix + ".color", spotLight->GetColor());
+                m_BRDFShader->SetUniform(prefix + ".innerCutOff", spotLight->GetInnerCutOff());
+                m_BRDFShader->SetUniform(prefix + ".outerCutOff", spotLight->GetOuterCutOff());
+                m_BRDFShader->SetUniform(prefix + ".shadowLayer", spotLightCount); // 临时使用索引作为层
+                // 聚光灯VP矩阵
+                m_BRDFShader->SetUniform("u_spotLightVP[" + std::to_string(spotLightCount) + "]", spotLight->GetLightVP());
+                spotLightCount++;
+                break;
+            }
             default:
                 break;
         }
     }
 
     m_BRDFShader->SetUniform("u_dirLightCount", directionalLightCount);
-    m_BRDFShader->SetUniform("u_pointLightCount", 0);
-    m_BRDFShader->SetUniform("u_spotLightCount", 0);
+    m_BRDFShader->SetUniform("u_pointLightCount", pointLightCount);
+    m_BRDFShader->SetUniform("u_spotLightCount", spotLightCount);
 
     // 相机参数
     m_BRDFShader->SetUniform("u_camPos", camera->GetPosition());
@@ -138,8 +138,10 @@ void BRDFPipeline::Render(const std::shared_ptr<scene::Scene>& scene,
     if (useShadow) {
         m_ShadowPassPtr->BindDirectionalShadowMap();
         m_BRDFShader->SetUniform("u_dirShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_DIR);
-        //m_BRDFShader->SetUniform("u_pointShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_POINT);
-        //m_BRDFShader->SetUniform("u_spotShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_SPOT);
+        m_ShadowPassPtr->BindPointShadowMap();
+        m_BRDFShader->SetUniform("u_pointShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_POINT);
+        m_ShadowPassPtr->BindSpotShadowMap();
+        m_BRDFShader->SetUniform("u_spotShadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_SPOT);
     }
     for (auto& entity : scene->GetEntities()) {
         entity->Draw(m_BRDFShader);

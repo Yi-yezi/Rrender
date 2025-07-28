@@ -50,7 +50,7 @@ private:
     GLuint m_quadVAO = 0; ///< 用于渲染阴影的四边形VAO
     GLuint m_quadVBO = 0; ///< 用于渲染阴影的四边形VBO
 
-
+    bool m_PointShdowRendered = false;
 
     std::shared_ptr<graphics::Shader> m_DirectionalShadowShader; ///< 平行光阴影着色器
     std::shared_ptr<graphics::Shader> m_PointShadowShader; ///< 点光源

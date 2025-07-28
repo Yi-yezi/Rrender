@@ -136,7 +136,10 @@
             entity->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
             entity->SetScale(glm::vec3(0.5f));
             scenePtr->AddEntity(entity);
-
+            entity = std::make_shared<Entity>(robotModel);
+            entity->SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
+            entity->SetScale(glm::vec3(0.5f));
+            scenePtr->AddEntity(entity);
             //entity = std::make_shared<Entity>(robotModel);
             //entity->SetPosition(glm::vec3(0.5f, 0.0f, 0.0f));
             //entity->SetScale(glm::vec3(0.5f));
@@ -198,29 +201,29 @@
 
             // 添加点光源
             auto pointLight = std::make_shared<PointLight>();
-            pointLight->SetPosition(glm::vec3(-10.0f,  10.0f, 10.0f));
-            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetPosition(glm::vec3(-4.0f,  0.0f, 0.0f));
+            pointLight->SetColor(glm::vec3(50.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(pointLight);
 
             pointLight = std::make_shared<PointLight>();
             pointLight->SetPosition(glm::vec3( 10.0f,  10.0f, 10.0f));
-            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetColor(glm::vec3(50.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(pointLight);
 
             pointLight = std::make_shared<PointLight>();
             pointLight->SetPosition(glm::vec3(-10.0f, -10.0f, 10.0f));
-            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetColor(glm::vec3(50.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(pointLight);
 
             pointLight = std::make_shared<PointLight>();
             pointLight->SetPosition(glm::vec3( 10.0f, -10.0f, 10.0f));
-            pointLight->SetColor(glm::vec3(300.0f));
+            pointLight->SetColor(glm::vec3(50.0f));
             pointLight->SetIntensity(1.0f);
             pointLight->SetAttenuation(1.0f, 0.09f, 0.032f);
             scenePtr->AddLight(pointLight);
@@ -232,11 +235,11 @@
             auto spotLight = std::make_shared<SpotLight>();
             spotLight->SetPosition(cameraPtr->GetPosition());
             spotLight->SetDirection(glm::normalize(cameraPtr->GetFront()));
-            spotLight->SetColor(glm::vec3(1.0f));
-            spotLight->SetIntensity(1.5f);
-            spotLight->SetCutOff(glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(17.5f)));
+            spotLight->SetColor(glm::vec3(200.0f));
+            spotLight->SetIntensity(300.0f);
+            spotLight->SetCutOff(glm::cos(glm::radians(5.5f)), glm::cos(glm::radians(17.5f)));
             spotLight->SetAttenuation(1.0f, 0.09f, 0.032f);
-            //scenePtr->AddLight(spotLight);
+            scenePtr->AddLight(spotLight);
 
             // 初始化ImGui
             UIManager::Init(windowPtr, "#version 330 core");
@@ -258,7 +261,7 @@
                 UIManager::BeginFrame();
 
                 // 渲染场景
-                pipeline.Render(scenePtr, cameraPtr, false, true);
+                pipeline.Render(scenePtr, cameraPtr, true, true);
 
 
                 // 渲染UI界面，传入相机和场景

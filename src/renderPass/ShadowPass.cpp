@@ -2,6 +2,7 @@
 #include "resource/ResourceManager.h"
 #include "assets/VerticesData.h"
 #include "utils/PathResolver.h"
+#include <iostream>
 
 
 namespace pipeline {
@@ -93,10 +94,12 @@ void ShadowPass::Execute(const std::shared_ptr<scene::Scene>& scene) {
     // 设置OpenGL状态
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL); // 使用小于等于来处理阴影贴图
-
+    if(!m_PointShdowRendered) {
+        RenderPointShadows(scene);
+        m_PointShdowRendered = true;
+    } 
     RenderDirectionalShadows(scene);
-    //RenderPointShadows(scene);
-    //RenderSpotShadows(scene);
+    RenderSpotShadows(scene);
 }
 
 void ShadowPass::RenderDirectionalShadows(const std::shared_ptr<scene::Scene>& scene) {
@@ -113,7 +116,7 @@ void ShadowPass::RenderDirectionalShadows(const std::shared_ptr<scene::Scene>& s
         glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_DirectionalShadowMap, 0, dirlightCount);
         glClear(GL_DEPTH_BUFFER_BIT);
         auto dirLight = std::dynamic_pointer_cast<graphics::DirectionalLight>(light);
-        glm::mat4 lightVP = dirLight->GetLightVP(1.0f, 1.0f, 20.5f);
+        glm::mat4 lightVP = dirLight->GetLightVP();
         m_DirectionalShadowShader->SetUniform("u_lightVP", lightVP);
         for(auto& entity : scene->GetEntities()) {
             entity->Draw(m_DirectionalShadowShader);
@@ -136,14 +139,14 @@ void ShadowPass::RenderPointShadows(const std::shared_ptr<scene::Scene>& scene) 
         if (pointLightCount >= m_MaxPointLights) break;
         auto pointLight = std::dynamic_pointer_cast<graphics::PointLight>(light);
         glm::vec3 lightPos = pointLight->GetPosition();
-        auto lightVPs= pointLight->GetLightVP(1.0f, 1.0f, 7.5f);
+        auto lightVPs= pointLight->GetLightVP(1.0f, 1.0f, 10.5f);
         for (int face = 0; face < 6; ++face) {
             int layer = pointLightCount * 6 + face;
             glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_PointShadowMap, 0, layer);
             glClear(GL_DEPTH_BUFFER_BIT);
             m_PointShadowShader->SetUniform("u_lightVP", lightVPs[face]);
             m_PointShadowShader->SetUniform("u_lightPos", lightPos);
-            m_PointShadowShader->SetUniform("u_farPlane", 7.5f);
+            m_PointShadowShader->SetUniform("u_farPlane", 10.5f);
             for (auto& entity : scene->GetEntities()) {
                 entity->Draw(m_PointShadowShader);
             }
@@ -179,14 +182,24 @@ void ShadowPass::RenderSpotShadows(const std::shared_ptr<scene::Scene>& scene) {
 }
 
 void ShadowPass::RenderQuad(){
-    glActiveTexture(GL_TEXTURE0+graphics::TextureSlots::TEX_SLOT_SHADOW_DIR);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, m_DirectionalShadowMap);
+    // 查看聚光灯阴影贴图
+    int layer = 0; // 第一个聚光灯的阴影贴图层
+    
+    // 绑定聚光灯阴影贴图
+    BindSpotShadowMap();
+    
     m_QuadShader->Bind();
-    m_QuadShader->SetUniform("u_shadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_DIR);
-    m_QuadShader->SetUniform("u_layer", 0); // 默认显示第0层
+    // 设置为2D数组类型（聚光灯使用2D数组，不是立方体贴图）
+    m_QuadShader->SetUniform("u_shadowMap", graphics::TextureSlots::TEX_SLOT_SHADOW_SPOT);
+    m_QuadShader->SetUniform("u_layer", layer);
+    m_QuadShader->SetUniform("u_face", 0);       // 2D数组不需要face，但保持兼容性
+    m_QuadShader->SetUniform("u_mapType", 0);    // 重要：设置为0表示2D数组类型
+    
+    // 渲染四边形
     glBindVertexArray(m_quadVAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
+    
     m_QuadShader->Unbind();
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }

@@ -168,35 +168,130 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 // ---- 阴影采样函数 ----
 
-// 方向光阴影采样
-float SampleDirectionalShadow(sampler2DArray shadowMap, int layer, vec4 shadowCoord)
+// 方向光阴影采样 - 简化的 PCF 版本
+float SampleDirectionalShadow(sampler2DArray shadowMap, int layer, vec4 shadowCoord, vec3 normal)
 {
     if (shadowCoord.w <= 0.0) return 1.0;
-    vec3 uv = vec3(shadowCoord.xy, layer);
-    float closestDepth = texture(shadowMap, uv).r;
-    float currentDepth = shadowCoord.z;
-    float bias = 0.005;
-    return currentDepth - bias > closestDepth ? 0.0 : 1.0;
+    
+    // 透视分割
+    vec3 projCoords = shadowCoord.xyz / shadowCoord.w;
+    
+    // NDC [-1,1] 转换到 [0,1]
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    // 边界检查
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 || 
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0) {
+        return 1.0;
+    }
+    
+    // 动态偏移计算
+    vec3 lightDir = normalize(-u_dirLights[layer].direction);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.01);
+    float currentDepth = projCoords.z;
+    
+    // PCF 采样设置
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0).xy;
+    
+    // 核大小硬编码（可以根据需要调整）
+    int kernelSize = 3; // 5x5 核（半径为2）
+    float sampleRadius = 1.0; // 采样半径倍数
+    
+    // 计算总采样数
+    int totalSamples = (2 * kernelSize + 1) * (2 * kernelSize + 1);
+    
+    for(int x = -kernelSize; x <= kernelSize; ++x)
+    {
+        for(int y = -kernelSize; y <= kernelSize; ++y)
+        {
+            vec2 offset = vec2(x, y) * texelSize * sampleRadius;
+            vec3 uv = vec3(projCoords.xy + offset, float(layer));
+            float closestDepth = texture(shadowMap, uv).r;
+            
+            shadow += currentDepth - bias > closestDepth ? 1.0 : 0.0;
+        }    
+    }
+    
+    shadow /= float(totalSamples); // 平均化
+    
+    return 1.0 - shadow; // 返回光照值（1.0 = 无阴影，0.0 = 完全阴影）
 }
 
-// 点光源阴影采样
+// 点光源阴影采样 - PCF 版本
 float SamplePointShadow(samplerCubeArray shadowMap, int layer, vec3 fragToLight)
 {
     float currentDepth = length(fragToLight);
-    float closestDepth = texture(shadowMap, vec4(fragToLight, layer)).r;
-    float bias = 0.05;
-    return currentDepth - bias > closestDepth ? 0.0 : 1.0;
+    float farPlane=10.5;
+    if (currentDepth > farPlane) {
+        return 1.0;
+    }
+    
+    // PCF 采样偏移向量（立方体贴图专用）
+    vec3 sampleOffsetDirections[20] = vec3[]
+    (
+       vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+       vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+       vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+       vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+       vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+    
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+    float viewDistance = length(u_camPos - fragToLight);
+    float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0; // 距离自适应半径
+    
+    for(int i = 0; i < samples; ++i)
+    {
+        vec3 sampleDir = fragToLight + sampleOffsetDirections[i] * diskRadius;
+        float closestDepth = texture(shadowMap, vec4(sampleDir, layer)).r;
+        closestDepth *= farPlane;
+        
+        shadow += currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    }
+    shadow /= float(samples);
+    
+    return 1.0 - shadow;
 }
 
-// 聚光灯阴影采样
-float SampleSpotShadow(sampler2DArray shadowMap, int layer, vec4 shadowCoord)
+// 聚光灯阴影采样 - 完全使用全局变量版本
+float SampleSpotShadow(sampler2DArray shadowMap, int layer, vec4 shadowCoord, vec3 normal, vec3 lightDirection)
 {
+    // 使用传入的阴影坐标和层索引
     if (shadowCoord.w <= 0.0) return 1.0;
-    vec3 uv = vec3(shadowCoord.xy, layer);
-    float closestDepth = texture(shadowMap, uv).r;
-    float currentDepth = shadowCoord.z;
-    float bias = 0.005;
-    return currentDepth - bias > closestDepth ? 0.0 : 1.0;
+    
+    // 透视分割
+    vec3 projCoords = shadowCoord.xyz / shadowCoord.w;
+    
+    // NDC [-1,1] 转换到 [0,1]
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    // 边界检查
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 || 
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0) {
+        return 1.0;
+    }
+    
+    // 计算偏移（基于法线和光线方向）
+    float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
+    float currentDepth = projCoords.z;
+    
+    // 简化版PCF采样
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0).xy;
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            float pcfDepth = texture(shadowMap, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+    
+    return 1.0 - shadow;
 }
 
 // ---- PBR Lighting Function ----
@@ -294,6 +389,11 @@ MaterialParams GetMaterialParams() {
         params.F0 = mix(vec3(0.04), params.albedo, params.metallic);
     }
     
+    // 修正：添加参数范围限制（在所有工作流处理之后）
+    params.metallic = clamp(params.metallic, 0.0, 1.0);
+    params.roughness = clamp(params.roughness, 0.04, 1.0); // 最小值 0.04 很重要
+    params.albedo = max(params.albedo, vec3(0.0)); // 避免负值
+    
     // 遮挡和自发光
     if (u_hasOcclusionTexture) {
         params.ao = texture(u_occlusionMap, TexCoords).r;
@@ -346,10 +446,8 @@ void main()
         vec3 H = normalize(V + L);
         float shadow = 1.0;
         if (u_enableShadow) {
-            vec4 shadowCoord = FragPosDirLightSpace[i];
-            shadowCoord.xyz /= shadowCoord.w;
-            shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; // NDC [-1,1] -> [0,1]
-            shadow = SampleDirectionalShadow(u_dirShadowMap, u_dirLights[i].shadowLayer, shadowCoord);
+            // 直接传递原始阴影坐标
+            shadow = SampleDirectionalShadow(u_dirShadowMap, u_dirLights[i].shadowLayer, FragPosDirLightSpace[i],N);
         }
         vec3 direct = PBRLighting(N, V, L, H, u_dirLights[i].color, material.albedo, material.metallic, material.roughness, material.F0);
         Lo += direct * shadow;
@@ -380,13 +478,19 @@ void main()
         float intensity = clamp((theta - u_spotLights[i].outerCutOff) / epsilon, 0.0, 1.0);
         vec3 H = normalize(V + L);
         float shadow = 1.0;
+        
         if (u_enableShadow) {
-            vec4 shadowCoord = FragPosSpotLightSpace[i];
-            shadowCoord.xyz /= shadowCoord.w;
-            shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; // NDC [-1,1] -> [0,1]
-            shadow = SampleSpotShadow(u_spotShadowMap, u_spotLights[i].shadowLayer, shadowCoord);
+            shadow = SampleSpotShadow(
+            u_spotShadowMap, 
+            u_spotLights[i].shadowLayer, // 使用当前聚光灯的阴影层
+            FragPosSpotLightSpace[0],    // 使用对应索引的阴影坐标
+            N, 
+            normalize(-u_spotLights[i].direction) // 确保方向向量单位化
+        );
         }
-        vec3 direct = PBRLighting(N, V, L, H, u_spotLights[i].color * attenuation * intensity, material.albedo, material.metallic, material.roughness, material.F0);
+        
+        vec3 direct = PBRLighting(N, V, L, H, u_spotLights[i].color * attenuation * intensity, 
+                             material.albedo, material.metallic, material.roughness, material.F0);
         Lo += direct * shadow;
     }
 
